@@ -3,13 +3,20 @@
 --  SPDX-License-Identifier: MIT
 ----------------------------------------------------------------
 
-with "/home/max/net/zeromq/zmq.gpr";
+with "zmq.gpr";
 with "matreshka_league";
 
 project Jupyter is
 
+   Version := "0.1.0";
+
    for Source_Dirs use ("../source");
    for Object_Dir use "../.objs";
+   for Library_Kind use "dynamic";
+   for Library_Name use "jupyterada";
+   for Library_Dir use "../.libs";
+   for Library_ALI_Dir use "../.libs/jupyterada";
+   for Library_Version use "libjupyterada.so." & Version;
 
    package Compiler is
       for Default_Switches ("ada") use

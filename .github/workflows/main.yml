@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2020 Max Reznik <reznikmm@gmail.com>
+#
+# SPDX-License-Identifier: MIT
+
+on: [push]
+name: Build
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and deploy RPM
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: jupyter
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v1.1
+        with:
+          args: --root jupyter lint
+      - uses: reznikmm/fedora-ada-action@v1
+        with:
+          spec: jupyter/packages/jupyter-ada.spec
