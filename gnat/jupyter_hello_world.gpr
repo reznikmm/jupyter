@@ -1,0 +1,18 @@
+--  SPDX-FileCopyrightText: 2020 Max Reznik <reznikmm@gmail.com>
+--
+--  SPDX-License-Identifier: MIT
+----------------------------------------------------------------
+
+with "jupyter.gpr";
+
+project Jupyter_Hello_World is
+
+   for Source_Dirs use ("../examples/hello_world");
+   for Main use ("hello_world_run");
+   for Object_Dir use "../.objs/hello_world";
+
+   package Compiler renames Jupyter.Compiler;
+
+   package Binder renames Jupyter.Binder;
+
+end Jupyter_Hello_World;
