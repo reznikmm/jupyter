@@ -139,6 +139,8 @@ is
      (Frontend : aliased in out Frontend_Connection;
       Request  : Message);
 
+   function Has_More (Message : ZMQ.Messages.Message) return Boolean;
+
    package Byte_IO is new Ada.Wide_Wide_Text_IO.Modular_IO
      (Ada.Streams.Stream_Element);
 
@@ -204,6 +206,16 @@ is
    end Bind;
 
    Log  : Ada.Wide_Wide_Text_IO.File_Type;
+
+   --------------
+   -- Has_More --
+   --------------
+
+   function Has_More (Message : ZMQ.Messages.Message) return Boolean is
+      use type Interfaces.C.int;
+   begin
+      return ZMQ.Low_Level.zmq_msg_more (Message.GetImpl) /= 0;
+   end Has_More;
 
    -------------
    -- Process --
@@ -403,7 +415,7 @@ is
          declare
             Text : constant String := MSG.GetData;
          begin
-            More := MSG.More;
+            More := Has_More (MSG);
             Ada.Wide_Wide_Text_IO.Put_Line
               (Log, Ada.Strings.UTF_Encoding.Wide_Wide_Strings.Decode (Text));
             Ada.Wide_Wide_Text_IO.Flush (Log);
@@ -432,9 +444,9 @@ is
             Ada.Wide_Wide_Text_IO.Put_Line
               (Log,
                Natural'Wide_Wide_Image (From.GetSize) &
-                 Boolean'Wide_Wide_Image (From.More));
+                 Boolean'Wide_Wide_Image (Has_More (From)));
             Ada.Wide_Wide_Text_IO.Flush (Log);
-            pragma Assert (From.More);
+            pragma Assert (Has_More (From));
          end;
       end loop;
 
@@ -456,9 +468,9 @@ is
             Ada.Wide_Wide_Text_IO.Put_Line
               (Log,
                "Temp=" & Natural'Wide_Wide_Image (Temp.GetSize) &
-                 Boolean'Wide_Wide_Image (Temp.More));
+                 Boolean'Wide_Wide_Image (Has_More (Temp)));
             Ada.Wide_Wide_Text_IO.Flush (Log);
-            More := Temp.More;
+            More := Has_More (Temp);
          end;
       end loop;
 
