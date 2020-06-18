@@ -26,3 +26,10 @@ clean:
 	gprclean -q -P gnat/jupyter.gpr
 	gprclean -q -P gnat/jupyter_hello_world.gpr
 
+check:
+	set -e -x; for J in tests/*.ipynb; do \
+	  FILE=`basename $$J .ipynb`; \
+	  cp -v $$J .; \
+	  JUPYTER_PATH=. jupyter nbconvert --to markdown --execute $$FILE.ipynb; \
+	  diff -u tests/expected/$$FILE.md $$FILE.md; \
+	done

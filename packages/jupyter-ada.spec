@@ -19,6 +19,8 @@ BuildRequires:   fedora-gnat-project-common  >= 3
 BuildRequires:   matreshka-devel
 BuildRequires:   gprbuild
 BuildRequires:   zeromq-ada-devel
+BuildRequires:   python3-jupyter-client
+BuildRequires:   python3-nbconvert
 
 # gprbuild only available on these:
 ExclusiveArch: %GPRbuild_arches
@@ -46,6 +48,9 @@ make  %{?_smp_mflags} GPRBUILD_FLAGS="%Gnatmake_optflags"
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} PREFIX=%{_prefix} GPRDIR=%{_gprdir} BINDIR=%{_bindir}
+
+%check
+make check LD_LIBRARY_PATH=.libs
 
 %post     -p /sbin/ldconfig
 %postun   -p /sbin/ldconfig

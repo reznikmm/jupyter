@@ -1,0 +1,17 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: jupyter
+Upstream-Contact: Max Reznik <reznikmm@gmail.com>
+Source: https://github.com/reznikmm/jupyter
+
+Files: README.md
+Copyright: 2020 Max Reznik <reznikmm@gmail.com>
+License: MIT
+
+Files: tests/*
+Copyright: 2020 Max Reznik <reznikmm@gmail.com>
+License: MIT
+
+Files: kernels/*
+Copyright: 2020 Max Reznik <reznikmm@gmail.com>
+License: MIT
+
