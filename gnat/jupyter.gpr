@@ -10,7 +10,7 @@ project Jupyter is
 
    Version := "0.1.0";
 
-   for Source_Dirs use ("../source");
+   for Source_Dirs use ("../sources/jupyter");
    for Object_Dir use "../.objs";
    for Library_Kind use "dynamic";
    for Library_Name use "jupyterada";
