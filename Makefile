@@ -18,6 +18,7 @@ GPRINSTALL_FLAGS = --prefix=$(PREFIX) --sources-subdir=$(INSTALL_INCLUDE_DIR)\
 all:
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter.gpr
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_hello_world.gpr
+	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_ada_kernel.gpr
 
 install:
 	gprinstall $(GPRINSTALL_FLAGS) -p -P gnat/jupyter.gpr -XHARDWARE_PLATFORM=x86_64
@@ -25,6 +26,7 @@ install:
 clean:
 	gprclean -q -P gnat/jupyter.gpr
 	gprclean -q -P gnat/jupyter_hello_world.gpr
+	gprclean -q -P gnat/jupyter_ada_kernel.gpr
 
 check:
 	set -e -x; for J in tests/*.ipynb; do \

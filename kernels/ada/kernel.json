@@ -1,0 +1,9 @@
+{
+    "argv": [
+        ".objs/ada_kernel/ada_kernel",
+        "{connection_file}"
+    ],
+    "display_name": "Ada",
+    "language": "ada",
+    "interrupt_mode": "message"
+}
