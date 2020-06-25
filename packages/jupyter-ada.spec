@@ -17,10 +17,12 @@ Source0:    jupyter-ada.tar.gz
 BuildRequires:   gcc-gnat
 BuildRequires:   fedora-gnat-project-common  >= 3
 BuildRequires:   matreshka-devel
+BuildRequires:   spawn-devel
 BuildRequires:   gprbuild
 BuildRequires:   zeromq-ada-devel
 BuildRequires:   python3-jupyter-client
 BuildRequires:   python3-nbconvert
+BuildRequires:   which
 
 # gprbuild only available on these:
 ExclusiveArch: %GPRbuild_arches

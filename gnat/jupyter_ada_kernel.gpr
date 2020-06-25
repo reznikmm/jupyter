@@ -4,6 +4,7 @@
 ----------------------------------------------------------------
 
 with "jupyter.gpr";
+with "spawn.gpr";
 
 project Jupyter_Ada_Kernel is
 

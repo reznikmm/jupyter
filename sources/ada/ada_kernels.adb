@@ -4,11 +4,14 @@
 ----------------------------------------------------------------
 
 with Ada.Characters.Wide_Wide_Latin_1;
+with Ada.Directories;
+with Ada.Wide_Wide_Text_IO;
 
 with League.JSON.Values;
 with League.String_Vectors;
 
 with Magics.Ls_Magic;
+with Processes;
 
 package body Ada_Kernels is
    function "+" (Text : Wide_Wide_String)
@@ -22,6 +25,7 @@ package body Ada_Kernels is
    procedure Parse_Line_Magic
      (Code : League.Strings.Universal_String;
       Args : out League.String_Vectors.Universal_String_Vector);
+   --  Extract one line magic from Code, split it and put it into Args.
 
    procedure Execute_Magic
      (Self              : aliased in out Session'Class;
@@ -30,6 +34,97 @@ package body Ada_Kernels is
       Magic             : League.String_Vectors.Universal_String_Vector;
       Silent            : Boolean;
       Error             : in out Jupyter.Kernels.Execution_Error);
+   --  Execute one line magic command.
+
+   function With_Clause_Probe
+     (Self : aliased in out Session'Class;
+      Code : League.Strings.Universal_String) return Boolean;
+   --  Check if given Code is a `clause` before a compilation unit
+
+   type Compilation_Unit is record
+      Name : League.Strings.Universal_String;
+      Text : League.Strings.Universal_String;
+   end record;
+
+   function Compilation_Unit_Probe
+     (Self : aliased in out Session'Class;
+      Unit : Compilation_Unit) return Boolean;
+   --  Check if given Unit is a valid compilation unit
+
+   Dir : constant League.Strings.Universal_String := +"/tmp/jupyter/";
+   Gprbuild : League.Strings.Universal_String;
+
+   ----------------------------
+   -- Compilation_Unit_Probe --
+   ----------------------------
+
+   function Compilation_Unit_Probe
+     (Self : aliased in out Session'Class;
+      Unit : Compilation_Unit) return Boolean
+   is
+      pragma Unreferenced (Self);
+      use type League.Strings.Universal_String;
+
+      Output  : Ada.Wide_Wide_Text_IO.File_Type;
+      Args    : League.String_Vectors.Universal_String_Vector;
+      Listing : League.Strings.Universal_String;
+      Errors  : League.Strings.Universal_String;
+      Status  : Integer;
+   begin
+      if Gprbuild.Is_Empty then
+         Ada.Directories.Create_Path (Dir.To_UTF_8_String);
+
+         Args.Append (+"gprbuild");
+         Processes.Run
+           (Program   => +"/usr/bin/which",
+            Arguments => Args,
+            Directory => Dir,
+            Output    => Gprbuild,
+            Errors    => Errors,
+            Status    => Status);
+
+         while Gprbuild.Ends_With
+           (Wide_Wide_String'(1 => Ada.Characters.Wide_Wide_Latin_1.LF))
+         loop
+            Gprbuild := Gprbuild.Head (Gprbuild.Length - 1);
+         end loop;
+
+         Args.Clear;
+         Errors.Clear;
+      end if;
+
+      Ada.Wide_Wide_Text_IO.Create
+        (Output,
+         Name => League.Strings.To_UTF_8_String (Dir & Unit.Name),
+         Form => "WCEM=8");
+
+      Ada.Wide_Wide_Text_IO.Put_Line (Output, Unit.Text.To_Wide_Wide_String);
+
+      Ada.Wide_Wide_Text_IO.Close (Output);
+
+      Ada.Wide_Wide_Text_IO.Create
+        (Output,
+         Name => Dir.To_UTF_8_String & "try.gpr",
+         Form => "WCEM=8");
+
+      Ada.Wide_Wide_Text_IO.Put_Line (Output, "project Try is end Try;");
+
+      Ada.Wide_Wide_Text_IO.Close (Output);
+
+      Args.Append (+"-Ptry.gpr");
+      Args.Append (+"-c");
+      Args.Append (Unit.Name);
+
+      Processes.Run
+        (Program   => Gprbuild,
+         Arguments => Args,
+         Directory => Dir,
+         Output    => Listing,
+         Errors    => Errors,
+         Status    => Status);
+
+      return Status = 0;
+   end Compilation_Unit_Probe;
 
    --------------------
    -- Create_Session --
@@ -66,7 +161,7 @@ package body Ada_Kernels is
                            Stop_On_Error, Expression_Values);
       Data : League.JSON.Objects.JSON_Object;
       Meta : League.JSON.Objects.JSON_Object;
-      Text : constant League.Strings.Universal_String := Code;
+      Text : League.Strings.Universal_String := Code;
    begin
       declare
          Magic : League.String_Vectors.Universal_String_Vector;
@@ -79,6 +174,10 @@ package body Ada_Kernels is
             return;
          end if;
       end;
+
+      if Self.With_Clause_Probe (Code) then
+         Text.Append (" is a with-clause");
+      end if;
 
       Expression_Values := League.JSON.Objects.Empty_JSON_Object;
 
@@ -184,5 +283,22 @@ package body Ada_Kernels is
          end;
       end loop;
    end Parse_Line_Magic;
+
+   -----------------------
+   -- With_Clause_Probe --
+   -----------------------
+
+   function With_Clause_Probe
+     (Self : aliased in out Session'Class;
+      Code : League.Strings.Universal_String) return Boolean
+   is
+      Unit : League.Strings.Universal_String := Code;
+   begin
+      Unit.Append ("procedure Jupyter_With_Clause_Probe is begin null; end;");
+
+      return Self.Compilation_Unit_Probe
+        ((Name => +"jupyter_with_clause_probe.adb",
+          Text => Unit));
+   end With_Clause_Probe;
 
 end Ada_Kernels;
