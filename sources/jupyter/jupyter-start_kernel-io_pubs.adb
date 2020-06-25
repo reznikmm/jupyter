@@ -6,10 +6,32 @@
 separate (Jupyter.Start_Kernel)
 package body IO_Pubs is
 
+   ------------
+   -- Stream --
+   ------------
+
    overriding procedure Stream
      (Self : in out IO_Pub;
       Name : League.Strings.Universal_String;
-      Text : League.Strings.Universal_String) is null;
+      Text : League.Strings.Universal_String)
+   is
+      Content : League.JSON.Objects.JSON_Object;
+   begin
+      Content.Insert
+        (+"name",
+         League.JSON.Values.To_JSON_Value (Name));
+      Content.Insert
+        (+"text",
+         League.JSON.Values.To_JSON_Value (Text));
+
+      Send_Message
+        (Self.Up.IOPub,
+         -(+"stream"),
+         Self.Up.Key,
+         "stream",
+         Self.Request,
+         Content);
+   end Stream;
 
    overriding procedure Display_Data
      (Self      : in out IO_Pub;
