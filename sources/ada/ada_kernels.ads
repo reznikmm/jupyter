@@ -15,7 +15,10 @@ package Ada_Kernels is
    type Kernel is limited new Jupyter.Kernels.Kernel with private;
 
 private
-   type Session is limited new Jupyter.Kernels.Session with null record;
+   type Session is limited new Jupyter.Kernels.Session with record
+      Directory : League.Strings.Universal_String;
+      --  Each session has its own directory
+   end record;
 
    overriding procedure Execute
      (Self              : aliased in out Session;

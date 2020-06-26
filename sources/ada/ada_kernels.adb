@@ -7,6 +7,8 @@ with Ada.Characters.Wide_Wide_Latin_1;
 with Ada.Directories;
 with Ada.Wide_Wide_Text_IO;
 
+with GNAT.OS_Lib;
+
 with League.JSON.Values;
 with League.String_Vectors;
 
@@ -51,7 +53,7 @@ package body Ada_Kernels is
       Unit : Compilation_Unit) return Boolean;
    --  Check if given Unit is a valid compilation unit
 
-   Dir : constant League.Strings.Universal_String := +"/tmp/jupyter/";
+   Top_Dir : constant League.Strings.Universal_String := +"/tmp/jupyter/";
    Gprbuild : League.Strings.Universal_String;
 
    ----------------------------
@@ -62,7 +64,6 @@ package body Ada_Kernels is
      (Self : aliased in out Session'Class;
       Unit : Compilation_Unit) return Boolean
    is
-      pragma Unreferenced (Self);
       use type League.Strings.Universal_String;
 
       Output  : Ada.Wide_Wide_Text_IO.File_Type;
@@ -71,31 +72,9 @@ package body Ada_Kernels is
       Errors  : League.Strings.Universal_String;
       Status  : Integer;
    begin
-      if Gprbuild.Is_Empty then
-         Ada.Directories.Create_Path (Dir.To_UTF_8_String);
-
-         Args.Append (+"gprbuild");
-         Processes.Run
-           (Program   => +"/usr/bin/which",
-            Arguments => Args,
-            Directory => Dir,
-            Output    => Gprbuild,
-            Errors    => Errors,
-            Status    => Status);
-
-         while Gprbuild.Ends_With
-           (Wide_Wide_String'(1 => Ada.Characters.Wide_Wide_Latin_1.LF))
-         loop
-            Gprbuild := Gprbuild.Head (Gprbuild.Length - 1);
-         end loop;
-
-         Args.Clear;
-         Errors.Clear;
-      end if;
-
       Ada.Wide_Wide_Text_IO.Create
         (Output,
-         Name => League.Strings.To_UTF_8_String (Dir & Unit.Name),
+         Name => League.Strings.To_UTF_8_String (Self.Directory & Unit.Name),
          Form => "WCEM=8");
 
       Ada.Wide_Wide_Text_IO.Put_Line (Output, Unit.Text.To_Wide_Wide_String);
@@ -104,7 +83,7 @@ package body Ada_Kernels is
 
       Ada.Wide_Wide_Text_IO.Create
         (Output,
-         Name => Dir.To_UTF_8_String & "try.gpr",
+         Name => Self.Directory.To_UTF_8_String & "try.gpr",
          Form => "WCEM=8");
 
       Ada.Wide_Wide_Text_IO.Put_Line (Output, "project Try is end Try;");
@@ -118,7 +97,7 @@ package body Ada_Kernels is
       Processes.Run
         (Program   => Gprbuild,
          Arguments => Args,
-         Directory => Dir,
+         Directory => Self.Directory,
          Output    => Listing,
          Errors    => Errors,
          Status    => Status);
@@ -135,8 +114,28 @@ package body Ada_Kernels is
       Session_Id : Positive;
       Result     : out Jupyter.Kernels.Session_Access)
    is
+      Dir    : League.Strings.Universal_String := Top_Dir;
       Object : constant Session_Access := new Session;
+      Image  : Wide_Wide_String := Session_Id'Wide_Wide_Image;
+      Found  : GNAT.OS_Lib.String_Access;
+      PID    : Wide_Wide_String :=
+        GNAT.OS_Lib.Pid_To_Integer
+         (GNAT.OS_Lib.Current_Process_Id)'Wide_Wide_Image;
    begin
+      PID (1) := 'P';
+      Dir.Append (PID);
+
+      if Gprbuild.Is_Empty then
+         Found := GNAT.OS_Lib.Locate_Exec_On_Path ("gprbuild");
+         Gprbuild.Append (League.Strings.From_UTF_8_String (Found.all));
+      end if;
+
+      Image (1) := '/';
+      Object.Directory.Append (Dir);
+      Object.Directory.Append (Image);
+      Ada.Directories.Create_Path (Object.Directory.To_UTF_8_String);
+
+      Object.Directory.Append ('/');
       Result := Jupyter.Kernels.Session_Access (Object);
       Self.Map.Insert (Session_Id, Object);
    end Create_Session;
