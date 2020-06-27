@@ -29,6 +29,8 @@ package body Ada_Kernels is
       Args : out League.String_Vectors.Universal_String_Vector);
    --  Extract one line magic from Code, split it and put it into Args.
 
+   procedure Find_Gprbuild (Self : in out Kernel'Class);
+
    procedure Execute_Magic
      (Self              : aliased in out Session'Class;
       IO_Pub            : not null Jupyter.Kernels.IO_Pub_Access;
@@ -54,7 +56,6 @@ package body Ada_Kernels is
    --  Check if given Unit is a valid compilation unit
 
    Top_Dir : constant League.Strings.Universal_String := +"/tmp/jupyter/";
-   Gprbuild : League.Strings.Universal_String;
 
    ----------------------------
    -- Compilation_Unit_Probe --
@@ -95,7 +96,7 @@ package body Ada_Kernels is
       Args.Append (Unit.Name);
 
       Processes.Run
-        (Program   => Gprbuild,
+        (Program   => Self.Gprbuild,
          Arguments => Args,
          Directory => Self.Directory,
          Output    => Listing,
@@ -117,7 +118,6 @@ package body Ada_Kernels is
       Dir    : League.Strings.Universal_String := Top_Dir;
       Object : constant Session_Access := new Session;
       Image  : Wide_Wide_String := Session_Id'Wide_Wide_Image;
-      Found  : GNAT.OS_Lib.String_Access;
       PID    : Wide_Wide_String :=
         GNAT.OS_Lib.Pid_To_Integer
          (GNAT.OS_Lib.Current_Process_Id)'Wide_Wide_Image;
@@ -125,17 +125,13 @@ package body Ada_Kernels is
       PID (1) := 'P';
       Dir.Append (PID);
 
-      if Gprbuild.Is_Empty then
-         Found := GNAT.OS_Lib.Locate_Exec_On_Path ("gprbuild");
-         Gprbuild.Append (League.Strings.From_UTF_8_String (Found.all));
-      end if;
-
       Image (1) := '/';
       Object.Directory.Append (Dir);
       Object.Directory.Append (Image);
       Ada.Directories.Create_Path (Object.Directory.To_UTF_8_String);
 
       Object.Directory.Append ('/');
+      Object.Gprbuild := Self.Gprbuild;
       Result := Jupyter.Kernels.Session_Access (Object);
       Self.Map.Insert (Session_Id, Object);
    end Create_Session;
@@ -218,6 +214,26 @@ package body Ada_Kernels is
       end if;
    end Execute_Magic;
 
+   -------------------
+   -- Find_Gprbuild --
+   -------------------
+
+   procedure Find_Gprbuild (Self : in out Kernel'Class) is
+      Dir    : League.Strings.Universal_String := Top_Dir;
+      Found  : GNAT.OS_Lib.String_Access;
+      PID    : Wide_Wide_String :=
+        GNAT.OS_Lib.Pid_To_Integer
+         (GNAT.OS_Lib.Current_Process_Id)'Wide_Wide_Image;
+   begin
+      PID (1) := 'P';
+      Dir.Append (PID);
+
+      if Self.Gprbuild.Is_Empty then
+         Found := GNAT.OS_Lib.Locate_Exec_On_Path ("gprbuild");
+         Self.Gprbuild.Append (League.Strings.From_UTF_8_String (Found.all));
+      end if;
+   end Find_Gprbuild;
+
    -----------------
    -- Get_Session --
    -----------------
@@ -239,9 +255,18 @@ package body Ada_Kernels is
      (Self   : aliased in out Kernel;
       Result : out League.JSON.Objects.JSON_Object)
    is
-      pragma Unreferenced (Self);
       Language : League.JSON.Objects.JSON_Object;
    begin
+      Self.Find_Gprbuild;
+
+      if Self.Gprbuild.Is_Empty then
+         Result.Insert (+"status", -"error");
+         Result.Insert (+"ename", -"NoGprbuild");
+         Result.Insert (+"evalue", -"No `gprbuild` in the PATH");
+
+         return;
+      end if;
+
       Language.Insert (+"name", -"Hello World");
       Language.Insert (+"version", -"2012");
       Language.Insert (+"mimetype", -"text/x-ada");
