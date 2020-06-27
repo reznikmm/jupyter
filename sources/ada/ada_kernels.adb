@@ -5,12 +5,14 @@
 
 with Ada.Characters.Wide_Wide_Latin_1;
 with Ada.Directories;
+with Ada.Streams;
 with Ada.Wide_Wide_Text_IO;
 
 with GNAT.OS_Lib;
 
 with League.JSON.Values;
 with League.String_Vectors;
+with League.Text_Codecs;
 
 with Magics.Ls_Magic;
 with Processes;
@@ -133,10 +135,41 @@ package body Ada_Kernels is
 
       Object.Directory.Append ('/');
       Object.Gprbuild := Self.Gprbuild;
-      Object.Driver := Self.Driver;
       Self.Map.Insert (Session_Id, Object);
+
+      Object.Process.Set_Working_Directory (Object.Directory.To_UTF_8_String);
+      Object.Process.Set_Program (Self.Driver.To_UTF_8_String);
+      Object.Process.Set_Listener
+        (Spawn.Processes.Process_Listener_Access (Object));
+      Object.Process.Start;
       Result := Jupyter.Kernels.Session_Access (Object);
    end Create_Session;
+
+   --------------------
+   -- Error_Occurred --
+   --------------------
+
+   overriding procedure Error_Occurred
+    (Self          : in out Session;
+     Process_Error : Integer)
+   is
+      pragma Unreferenced (Process_Error);
+   begin
+      Self.Finished := True;
+   end Error_Occurred;
+
+   ------------------------
+   -- Exception_Occurred --
+   ------------------------
+
+   overriding procedure Exception_Occurred
+     (Self       : in out Session;
+      Occurrence : Ada.Exceptions.Exception_Occurrence)
+   is
+      pragma Unreferenced (Occurrence);
+   begin
+      Self.Finished := True;
+   end Exception_Occurred;
 
    -------------
    -- Execute --
@@ -233,6 +266,19 @@ package body Ada_Kernels is
       return Result;
    end Find_In_Path;
 
+   --------------
+   -- Finished --
+   --------------
+
+   overriding procedure Finished
+    (Self      : in out Session;
+     Exit_Code : Integer)
+   is
+      pragma Unreferenced (Exit_Code);
+   begin
+      Self.Finished := True;
+   end Finished;
+
    -----------------
    -- Get_Session --
    -----------------
@@ -319,6 +365,55 @@ package body Ada_Kernels is
          end;
       end loop;
    end Parse_Line_Magic;
+
+   -------------------------------
+   -- Standard_Output_Available --
+   -------------------------------
+
+   overriding procedure Standard_Output_Available (Self : in out Session) is
+      use type Ada.Streams.Stream_Element;
+      use type Ada.Streams.Stream_Element_Count;
+      use type Jupyter.Kernels.IO_Pub_Access;
+   begin
+      loop
+         declare
+            Data : Ada.Streams.Stream_Element_Array (1 .. 512);
+            Last : Ada.Streams.Stream_Element_Count;
+            LF   : Ada.Streams.Stream_Element_Count := 0;
+            Text : League.Strings.Universal_String;
+         begin
+            Self.Process.Read_Standard_Output (Data, Last);
+
+            exit when Last < Data'First;
+
+            if Self.IO_Pub = null then
+               Self.Stdout.Append (Data (1 .. Last));
+            else
+               for J in reverse 1 .. Last loop
+                  if Data (J) = 10 then
+                     LF := J;
+                     exit;
+                  end if;
+               end loop;
+
+               if LF > 0 then
+                  Self.Stdout.Append (Data (1 .. LF));
+
+                  Text :=
+                    League.Text_Codecs.Codec_For_Application_Locale.
+                      Decode (Self.Stdout);
+
+                  Self.IO_Pub.Stream (+"stdout", Text);
+
+                  Self.Stdout := League.Stream_Element_Vectors.
+                    To_Stream_Element_Vector (Data (LF + 1 .. Data'Last));
+               else
+                  Self.Stdout.Append (Data (1 .. Last));
+               end if;
+            end if;
+         end;
+      end loop;
+   end Standard_Output_Available;
 
    -----------------------
    -- With_Clause_Probe --

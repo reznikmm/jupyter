@@ -15,8 +15,7 @@ procedure Magics.Ls_Magic
    Silent : Boolean)
 is
    Result : League.Strings.Universal_String;
-   Data : League.JSON.Objects.JSON_Object;
-   Meta : League.JSON.Objects.JSON_Object;
+   Data   : League.JSON.Objects.JSON_Object;
 begin
    if not Silent then
       Result.Append ("Available line magics:");
@@ -26,7 +25,7 @@ begin
       Data.Insert (+"text/plain", League.JSON.Values.To_JSON_Value (Result));
       IO_Pub.Execute_Result
         (Data      => Data,
-         Metadata  => Meta,
+         Metadata  => League.JSON.Objects.Empty_JSON_Object,
          Transient => League.JSON.Objects.Empty_JSON_Object);
    end if;
 end Magics.Ls_Magic;

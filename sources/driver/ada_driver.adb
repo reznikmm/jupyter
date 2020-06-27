@@ -3,7 +3,8 @@
 --  SPDX-License-Identifier: MIT
 ----------------------------------------------------------------
 
+with Ada.Text_IO;
 procedure Ada_Driver is
 begin
-   null;
+   Ada.Text_IO.Put_Line ("Hello");
 end Ada_Driver;

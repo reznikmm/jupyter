@@ -4,9 +4,13 @@
 ----------------------------------------------------------------
 
 with Ada.Containers.Hashed_Maps;
+with Ada.Exceptions;
 
 with League.JSON.Objects;
+with League.Stream_Element_Vectors;
 with League.Strings;
+
+with Spawn.Processes;
 
 with Jupyter.Kernels;
 
@@ -15,11 +19,16 @@ package Ada_Kernels is
    type Kernel is limited new Jupyter.Kernels.Kernel with private;
 
 private
-   type Session is limited new Jupyter.Kernels.Session with record
+   type Session is limited new Jupyter.Kernels.Session
+     and Spawn.Processes.Process_Listener
+   with record
       Gprbuild  : League.Strings.Universal_String;
-      Driver    : League.Strings.Universal_String;
+      Process   : Spawn.Processes.Process;
       Directory : League.Strings.Universal_String;
       --  Each session has its own directory
+      IO_Pub    : Jupyter.Kernels.IO_Pub_Access;
+      Stdout    : League.Stream_Element_Vectors.Stream_Element_Vector;
+      Finished  : Boolean := True;
    end record;
 
    overriding procedure Execute
@@ -33,6 +42,20 @@ private
       Stop_On_Error     : Boolean;
       Expression_Values : out League.JSON.Objects.JSON_Object;
       Error             : in out Jupyter.Kernels.Execution_Error);
+
+   overriding procedure Standard_Output_Available (Self : in out Session);
+
+   overriding procedure Finished
+    (Self      : in out Session;
+     Exit_Code : Integer);
+
+   overriding procedure Error_Occurred
+    (Self          : in out Session;
+     Process_Error : Integer);
+
+   overriding procedure Exception_Occurred
+     (Self       : in out Session;
+      Occurrence : Ada.Exceptions.Exception_Occurrence);
 
    type Session_Access is access all Session;
 
