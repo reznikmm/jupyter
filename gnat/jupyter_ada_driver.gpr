@@ -1,0 +1,19 @@
+--  SPDX-FileCopyrightText: 2020 Max Reznik <reznikmm@gmail.com>
+--
+--  SPDX-License-Identifier: MIT
+----------------------------------------------------------------
+
+with "jupyter.gpr";
+with "spawn.gpr";
+
+project Jupyter_Ada_Driver is
+
+   for Source_Dirs use ("../sources/driver");
+   for Main use ("ada_driver.adb");
+   for Object_Dir use "../.objs/driver";
+
+   package Compiler renames Jupyter.Compiler;
+
+   package Binder renames Jupyter.Binder;
+
+end Jupyter_Ada_Driver;

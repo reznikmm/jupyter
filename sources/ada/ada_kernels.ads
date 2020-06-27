@@ -17,6 +17,7 @@ package Ada_Kernels is
 private
    type Session is limited new Jupyter.Kernels.Session with record
       Gprbuild  : League.Strings.Universal_String;
+      Driver    : League.Strings.Universal_String;
       Directory : League.Strings.Universal_String;
       --  Each session has its own directory
    end record;
@@ -46,6 +47,7 @@ private
 
    type Kernel is limited new Jupyter.Kernels.Kernel with record
       Gprbuild : League.Strings.Universal_String;
+      Driver   : League.Strings.Universal_String;
       Map      : Session_Maps.Map;
       Last_Id  : Natural := 0;
    end record;

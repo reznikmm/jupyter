@@ -19,6 +19,7 @@ all:
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter.gpr
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_hello_world.gpr
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_ada_kernel.gpr
+	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_ada_driver.gpr
 
 install:
 	gprinstall $(GPRINSTALL_FLAGS) -p -P gnat/jupyter.gpr -XHARDWARE_PLATFORM=x86_64
@@ -27,11 +28,13 @@ clean:
 	gprclean -q -P gnat/jupyter.gpr
 	gprclean -q -P gnat/jupyter_hello_world.gpr
 	gprclean -q -P gnat/jupyter_ada_kernel.gpr
+	gprclean -q -P gnat/jupyter_ada_driver.gpr
 
 check:
 	set -e -x; for J in tests/*.ipynb; do \
 	  FILE=`basename $$J .ipynb`; \
 	  cp -v $$J .; \
+	  PATH=$(PATH):.objs/driver \
 	  JUPYTER_PATH=. jupyter nbconvert --KernelManager.shutdown_wait_time=0.5 \
 	    --allow-errors --to markdown --execute $$FILE.ipynb; \
 	  diff -u tests/expected/$$FILE.md $$FILE.md; \

@@ -29,7 +29,8 @@ package body Ada_Kernels is
       Args : out League.String_Vectors.Universal_String_Vector);
    --  Extract one line magic from Code, split it and put it into Args.
 
-   procedure Find_Gprbuild (Self : in out Kernel'Class);
+   function Find_In_Path
+     (File : String) return League.Strings.Universal_String;
 
    procedure Execute_Magic
      (Self              : aliased in out Session'Class;
@@ -132,8 +133,9 @@ package body Ada_Kernels is
 
       Object.Directory.Append ('/');
       Object.Gprbuild := Self.Gprbuild;
-      Result := Jupyter.Kernels.Session_Access (Object);
+      Object.Driver := Self.Driver;
       Self.Map.Insert (Session_Id, Object);
+      Result := Jupyter.Kernels.Session_Access (Object);
    end Create_Session;
 
    -------------
@@ -218,21 +220,18 @@ package body Ada_Kernels is
    -- Find_Gprbuild --
    -------------------
 
-   procedure Find_Gprbuild (Self : in out Kernel'Class) is
-      Dir    : League.Strings.Universal_String := Top_Dir;
+   function Find_In_Path
+     (File : String) return League.Strings.Universal_String
+   is
       Found  : GNAT.OS_Lib.String_Access;
-      PID    : Wide_Wide_String :=
-        GNAT.OS_Lib.Pid_To_Integer
-         (GNAT.OS_Lib.Current_Process_Id)'Wide_Wide_Image;
+      Result : League.Strings.Universal_String;
    begin
-      PID (1) := 'P';
-      Dir.Append (PID);
+      Found := GNAT.OS_Lib.Locate_Exec_On_Path (File);
+      Result := League.Strings.From_UTF_8_String (Found.all);
+      GNAT.OS_Lib.Free (Found);
 
-      if Self.Gprbuild.Is_Empty then
-         Found := GNAT.OS_Lib.Locate_Exec_On_Path ("gprbuild");
-         Self.Gprbuild.Append (League.Strings.From_UTF_8_String (Found.all));
-      end if;
-   end Find_Gprbuild;
+      return Result;
+   end Find_In_Path;
 
    -----------------
    -- Get_Session --
@@ -255,14 +254,27 @@ package body Ada_Kernels is
      (Self   : aliased in out Kernel;
       Result : out League.JSON.Objects.JSON_Object)
    is
+      Dir    : League.Strings.Universal_String := Top_Dir;
+      PID    : Wide_Wide_String :=
+        GNAT.OS_Lib.Pid_To_Integer
+         (GNAT.OS_Lib.Current_Process_Id)'Wide_Wide_Image;
       Language : League.JSON.Objects.JSON_Object;
    begin
-      Self.Find_Gprbuild;
+      PID (1) := 'P';
+      Dir.Append (PID);
+      Self.Gprbuild := Find_In_Path ("gprbuild");
+      Self.Driver := Find_In_Path ("ada_driver");
 
       if Self.Gprbuild.Is_Empty then
          Result.Insert (+"status", -"error");
          Result.Insert (+"ename", -"NoGprbuild");
          Result.Insert (+"evalue", -"No `gprbuild` in the PATH");
+
+         return;
+      elsif Self.Driver.Is_Empty then
+         Result.Insert (+"status", -"error");
+         Result.Insert (+"ename", -"NoAdaDriver");
+         Result.Insert (+"evalue", -"No `ada_driver` in the PATH");
 
          return;
       end if;
