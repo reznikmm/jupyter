@@ -52,7 +52,7 @@ rm -rf %{buildroot}
 make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} PREFIX=%{_prefix} GPRDIR=%{_gprdir} BINDIR=%{_bindir}
 
 %check
-make check LD_LIBRARY_PATH=.libs
+make check LD_LIBRARY_PATH=$PWD/.libs
 
 %post     -p /sbin/ldconfig
 %postun   -p /sbin/ldconfig

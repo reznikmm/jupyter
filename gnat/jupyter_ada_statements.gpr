@@ -1,0 +1,29 @@
+--  SPDX-FileCopyrightText: 2020 Max Reznik <reznikmm@gmail.com>
+--
+--  SPDX-License-Identifier: MIT
+----------------------------------------------------------------
+
+project Jupyter_Ada_Statements is
+
+   Run := external ("EXECUTION_COUNTER", "0");
+   Dir := external ("RUN_DIR", "./");
+   Unit := "run_" & Run;
+   for Source_Dirs use (Dir);
+   for Source_Files use (Unit & ".ads", Unit & ".adb");
+   for Object_Dir use Dir & "/.objs";
+   for Library_Kind use "dynamic";
+   for Library_Name use "jas" & Run;
+   for Library_Dir use Dir & "/.libs";
+   for Library_Standalone use "standard";
+   for Library_Interface use (Unit);
+
+   package Compiler is
+      for Default_Switches ("ada") use
+        ("-gnat12", "-gnatW8", "-g", "-gnatVa", "-fstack-check",
+         "-gnata");
+   end Compiler;
+
+   package Binder is
+      for Switches ("ada") use ("-E", "-W8");
+   end Binder;
+end Jupyter_Ada_Statements;

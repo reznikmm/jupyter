@@ -8,6 +8,7 @@ with Ada.Exceptions;
 
 with League.JSON.Objects;
 with League.Stream_Element_Vectors;
+with League.String_Vectors;
 with League.Strings;
 
 with Spawn.Processes;
@@ -17,6 +18,10 @@ with Jupyter.Kernels;
 package Ada_Kernels is
 
    type Kernel is limited new Jupyter.Kernels.Kernel with private;
+
+   procedure Initialize
+     (Self  : in out Kernel'Class;
+      Error : out League.Strings.Universal_String);
 
 private
    type Session is limited new Jupyter.Kernels.Session
@@ -28,7 +33,12 @@ private
       --  Each session has its own directory
       IO_Pub    : Jupyter.Kernels.IO_Pub_Access;
       Stdout    : League.Stream_Element_Vectors.Stream_Element_Vector;
+      Stderr    : League.Stream_Element_Vectors.Stream_Element_Vector;
+      Service   : League.Stream_Element_Vectors.Stream_Element_Vector;
+      Injected  : Boolean := False;
       Finished  : Boolean := True;
+      Ready     : Boolean := True;  --  Driver's ready to get next Command
+      Clauses   : League.String_Vectors.Universal_String_Vector;
    end record;
 
    overriding procedure Execute
@@ -44,6 +54,7 @@ private
       Error             : in out Jupyter.Kernels.Execution_Error);
 
    overriding procedure Standard_Output_Available (Self : in out Session);
+   overriding procedure Standard_Error_Available (Self : in out Session);
 
    overriding procedure Finished
     (Self      : in out Session;
