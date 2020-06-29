@@ -1,4 +1,4 @@
-```Hello World
+```Ada
 %lsmagic
 ```
 
@@ -11,7 +11,7 @@
 
 
 
-```Hello World
+```Ada
 %lsmagic1 1
 ```
 

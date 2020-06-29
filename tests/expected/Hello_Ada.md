@@ -1,37 +1,39 @@
-# Ada Jupiter kernel
+# Jupiter Ada kernel
 
 The kernel accepts an Ada program piece by piece. A piece could be:
-* A with and use clauses that go before a compilation unit:
+1. A sequence of [context clauses](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-10-1-2.html#S0253):
 
 
-```Hello World
+```Ada
 with Ada.Text_IO;
 ```
 
+2. A sequence of [statements](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-5-1.html#S0146) to be executed:
 
 
-
-    with Ada.Text_IO; is with-clause!
-
-
-
-* A Sequence of statements to be executed:
-
-
-```Hello World
-Ada.Text_IO.Put_Line ("aaa");
+```Ada
+Ada.Text_IO.Put_Line ("Hello World");
 ```
 
 
 
 
-    aaa
+    Hello World
 
 
 
 
+3. A sequence of [basic declarative items](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-3-11.html#S0088) to be elaborated:
 
-```Hello World
+
+```Ada
+X : Integer := 1;
+```
+
+There are also some "magic" commands:
+
+
+```Ada
 %lsmagic
 ```
 

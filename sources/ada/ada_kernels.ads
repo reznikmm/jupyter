@@ -24,6 +24,7 @@ package Ada_Kernels is
       Error : out League.Strings.Universal_String);
 
 private
+
    type Session is limited new Jupyter.Kernels.Session
      and Spawn.Processes.Process_Listener
    with record
@@ -39,6 +40,7 @@ private
       Finished  : Boolean := True;
       Ready     : Boolean := True;  --  Driver's ready to get next Command
       Clauses   : League.String_Vectors.Universal_String_Vector;
+      Runs      : League.String_Vectors.Universal_String_Vector;
    end record;
 
    overriding procedure Execute
