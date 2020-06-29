@@ -19,3 +19,12 @@ jobs:
       - uses: reznikmm/fedora-ada-action@v1
         with:
           spec: jupyter/packages/jupyter-ada.spec
+      - uses: reznikmm/upload-bintray-docker-action@v2
+        with:
+          username: reznikmm
+          repository: matreshka
+          package: jupyter-ada
+          version: head-fc31
+          sourcePath: x86_64/*
+          override: 1
+          apiKey: ${{secrets.BINTRAY_API_KEY}}

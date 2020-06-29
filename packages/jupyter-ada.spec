@@ -41,6 +41,15 @@ Requires:   fedora-gnat-project-common  >= 2
 %description devel
 Devel package for Jupyter Ada
 
+%package kernel
+Summary:    Jupyter Ada Kernel
+License:    MIT
+Group:      System Environment/Libraries
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+
+%description kernel
+The kernel to run an Ada program piece by piece.
+
 %prep
 %setup -q -n jupyter
 
@@ -72,6 +81,12 @@ make check LD_LIBRARY_PATH=$PWD/.libs
 %{_gprdir}/jupyter.gpr
 %{_gprdir}/manifests/jupyter
 
+%files kernel
+%{_bindir}/ada_kernel
+%{_bindir}/ada_driver
+%dir %{_datadir}/jupyter/kernels/ada
+%{_datadir}/jupyter/kernels/ada/kernel.json
+%{_gprdir}/manifests/jupyter_ada_{kernel,driver}
 
 %changelog
 * Tue Jun 16 2020 Maxim Reznik <reznikmm@gmail.com> - 0.1.0-git
