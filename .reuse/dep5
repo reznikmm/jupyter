@@ -15,3 +15,6 @@ Files: kernels/*
 Copyright: 2020 Max Reznik <reznikmm@gmail.com>
 License: MIT
 
+Files: codemirror/*
+Copyright: CodeMirror, copyright (c) by Marijn Haverbeke and others
+License: MIT
