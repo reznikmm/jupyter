@@ -81,7 +81,7 @@ package body Processes is
          Last : Ada.Streams.Stream_Element_Count;
       begin
          loop
-            Process.Read_Standard_Output (Data, Last);
+            Process.Read_Standard_Error (Data, Last);
             exit when Last < Data'First;
             Self.Errors.Append (Data (1 .. Last));
          end loop;
