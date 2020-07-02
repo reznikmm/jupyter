@@ -50,29 +50,29 @@ package body Ada_Kernels is
    --  Execute one line magic command.
 
    procedure With_Clause_Probe
-     (Self : aliased in out Session'Class;
-      Code : League.Strings.Universal_String;
-      Dir  : League.Strings.Universal_String;
-      Run  : League.Strings.Universal_String;
-      Ok   : in out Boolean);
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String);
    --  Check if given Code is a `clause` before a compilation unit
 
    procedure Statements_Probe
-     (Self : aliased in out Session'Class;
-      Code : League.Strings.Universal_String;
-      Dir  : League.Strings.Universal_String;
-      Run  : League.Strings.Universal_String;
-      Text : out League.Strings.Universal_String;
-      Ok   : in out Boolean);
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String);
    --  Check if given Code is a statement sequence
 
    procedure Declarations_Probe
-     (Self : aliased in out Session'Class;
-      Code : League.Strings.Universal_String;
-      Dir  : League.Strings.Universal_String;
-      Run  : League.Strings.Universal_String;
-      Text : out League.Strings.Universal_String;
-      Ok   : in out Boolean);
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String);
    --  Check if given Code is a statement sequence
 
    procedure Write_File
@@ -172,7 +172,7 @@ package body Ada_Kernels is
            & Format (+"with ""../.run$/run_$.gpr"";", Self.Runs (J));
       end loop;
 
-      Comp := +"""-gnatW8"", ""-gnatVa"", ""-fstack-check""";
+      Comp := +"""-gnatW8"", ""-gnatVa"", ""-fstack-check"", ""-gnatv""";
       Bind := +"""-W8"", ""-E""";
       Kind := Kind.Head_To (Kind.Length - 5).To_Lowercase;
       Name := Format (+"$_$", Kind, Run);
@@ -234,12 +234,12 @@ package body Ada_Kernels is
    ------------------------
 
    procedure Declarations_Probe
-     (Self : aliased in out Session'Class;
-      Code : League.Strings.Universal_String;
-      Dir  : League.Strings.Universal_String;
-      Run  : League.Strings.Universal_String;
-      Text : out League.Strings.Universal_String;
-      Ok   : in out Boolean)
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String)
    is
       use type League.Strings.Universal_String;
 
@@ -251,17 +251,11 @@ package body Ada_Kernels is
         Self.Clauses.Join (Line_Feed);
       Status  : Integer;
    begin
-      if Ok then
-         return;
-      end if;
-
       Write_File
         (Dir & Format (+"run_$.ads", Run),
          Self.With_Runs &
          Clauses &
-         Format
-           (+"package Run_$ is $ end Run_$;",
-            Run, Code, Run));
+         Format (+"package Run_$ is $ end;", Run, Code));
 
       Self.Create_Project_File (Dir, Run, Run_Cell, GPR);
       Args.Append ("-P" & GPR);
@@ -274,9 +268,7 @@ package body Ada_Kernels is
          Errors    => Errors,
          Status    => Status);
 
-      Ok := Status = 0;
-
-      if Ok then
+      if Status = 0 then
          declare
             Load   : League.Strings.Universal_String;
             Ignore : Ada.Streams.Stream_Element_Offset;
@@ -297,6 +289,8 @@ package body Ada_Kernels is
             Self.Stdout.Clear;
             Self.Runs.Append (Run);
          end;
+      else
+         Error := Listing;
       end if;
    end Declarations_Probe;
 
@@ -345,10 +339,12 @@ package body Ada_Kernels is
       pragma Unreferenced (User_Expressions, Allow_Stdin,
                            Stop_On_Error, Expression_Values);
       use type League.Strings.Universal_String;
+      With_Error : League.Strings.Universal_String;
+      Stmt_Error : League.Strings.Universal_String;
+      Decl_Error : League.Strings.Universal_String;
       Data : League.JSON.Objects.JSON_Object;
       Meta : League.JSON.Objects.JSON_Object;
       Text : League.Strings.Universal_String;
-      Ok   : Boolean := False;
       Run  : constant League.Strings.Universal_String :=
         Image (Execution_Counter);
       Dir  : constant League.Strings.Universal_String :=
@@ -371,13 +367,43 @@ package body Ada_Kernels is
       Ada.Directories.Create_Path (Dir.To_UTF_8_String & "/.objs");
       Ada.Directories.Create_Path (Dir.To_UTF_8_String & "/.libs");
 
-      Self.With_Clause_Probe (Code, Dir, Run, Ok);
-      Self.Statements_Probe (Code, Dir, Run, Text, Ok);
-      Self.Declarations_Probe (Code, Dir, Run, Text, Ok);
+      Self.With_Clause_Probe (Code, Dir, Run, With_Error);
+      if not With_Error.Is_Empty then
+         Self.Statements_Probe (Code, Dir, Run, Text, Stmt_Error);
+
+         if not Stmt_Error.Is_Empty then
+            Self.Declarations_Probe (Code, Dir, Run, Text, Decl_Error);
+         end if;
+      end if;
 
       Expression_Values := League.JSON.Objects.Empty_JSON_Object;
 
-      if not Silent and not Text.Is_Empty then
+      if not Decl_Error.Is_Empty then
+         Text := +"Unable to process. Program state doesn't change!";
+         Text.Append (Line_Feed);
+         Text.Append (Line_Feed);
+         Text.Append ("Errors for context clauses probe:");
+         Text.Append (Line_Feed);
+         Text.Append (With_Error);
+         Text.Append (Line_Feed);
+         Text.Append (Line_Feed);
+         Text.Append ("Errors for statements probe:");
+         Text.Append (Line_Feed);
+         Text.Append (Stmt_Error);
+         Text.Append (Line_Feed);
+         Text.Append (Line_Feed);
+         Text.Append ("Errors for basic declarative items probe:");
+         Text.Append (Line_Feed);
+         Text.Append (Decl_Error);
+         Text.Append (Line_Feed);
+
+         IO_Pub.Stream
+           (Name => +"stderr",
+            Text => Text);
+
+         Error.Name := +"CompilationFailed";
+         Error.Value := Text;
+      elsif not Silent and not Text.Is_Empty then
          Data.Insert (+"text/plain", League.JSON.Values.To_JSON_Value (Text));
          IO_Pub.Execute_Result
            (Data      => Data,
@@ -710,12 +736,12 @@ package body Ada_Kernels is
    ----------------------
 
    procedure Statements_Probe
-     (Self : aliased in out Session'Class;
-      Code : League.Strings.Universal_String;
-      Dir  : League.Strings.Universal_String;
-      Run  : League.Strings.Universal_String;
-      Text : out League.Strings.Universal_String;
-      Ok   : in out Boolean)
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String)
    is
       use type League.Strings.Universal_String;
 
@@ -727,23 +753,17 @@ package body Ada_Kernels is
         Self.Clauses.Join (Line_Feed);
       Status  : Integer;
    begin
-      if Ok then
-         return;
-      end if;
-
       Write_File
         (Dir & Format (+"execute_$.ads", Run),
          Format
-           (+"package Execute_$ is pragma Elaborate_Body; end Execute_$;",
+           (+"package Execute_$ is pragma Elaborate_Body; end;",
             Run));
 
       Write_File
         (Dir & Format (+"execute_$.adb", Run),
          Self.With_Runs &
          Clauses &
-         Format
-           (+"package body Execute_$ is begin $ end Execute_$;",
-            Run, Code, Run));
+         Format (+"package body Execute_$ is begin $ end;", Run, Code));
 
       Self.Create_Project_File (Dir, Run, Execute_Cell, GPR);
       Args.Append ("-P" & GPR);
@@ -756,9 +776,7 @@ package body Ada_Kernels is
          Errors    => Errors,
          Status    => Status);
 
-      Ok := Status = 0;
-
-      if Ok then
+      if Status = 0 then
          declare
             Load   : League.Strings.Universal_String;
             Ignore : Ada.Streams.Stream_Element_Offset;
@@ -778,6 +796,8 @@ package body Ada_Kernels is
             Text := UTF_8.Decode (Self.Stdout);
             Self.Stdout.Clear;
          end;
+      else
+         Error := Listing;
       end if;
    end Statements_Probe;
 
@@ -786,11 +806,11 @@ package body Ada_Kernels is
    -----------------------
 
    procedure With_Clause_Probe
-     (Self : aliased in out Session'Class;
-      Code : League.Strings.Universal_String;
-      Dir  : League.Strings.Universal_String;
-      Run  : League.Strings.Universal_String;
-      Ok   : in out Boolean)
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String)
    is
       use type League.Strings.Universal_String;
 
@@ -802,10 +822,6 @@ package body Ada_Kernels is
         Self.Clauses.Join (Line_Feed);
       Status  : Integer;
    begin
-      if Ok then
-         return;
-      end if;
-
       Write_File
         (Dir & Format (+"with_$.adb", Run),
          Self.With_Runs &
@@ -825,11 +841,11 @@ package body Ada_Kernels is
          Errors    => Errors,
          Status    => Status);
 
-      Ok := Status = 0;
-
-      if Ok then
+      if Status = 0 then
          Self.Clauses.Append
            (Code.Split (Line_Feed, League.Strings.Skip_Empty));
+      else
+         Error := Listing;
       end if;
    end With_Clause_Probe;
 
