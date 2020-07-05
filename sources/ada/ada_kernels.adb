@@ -17,6 +17,8 @@ with Spawn.Processes.Monitor_Loop;
 
 with Magics.Ls_Magic;
 with Magics.Output;
+with Magics.Write_File;
+
 with Processes;
 
 package body Ada_Kernels is
@@ -574,6 +576,17 @@ package body Ada_Kernels is
          else
             Error.Name := +"UsageError";
             Error.Value := +"Run: %%output MIME-type.";
+
+            IO_Pub.Stream
+              (Name => +"stderr",
+               Text => Error.Name & ": " & Error.Value);
+         end if;
+      elsif First = +"%%writefile" then
+         if Magic.Length = 2 then
+            Magics.Write_File (IO_Pub, Magic (2), Block, Silent);
+         else
+            Error.Name := +"UsageError";
+            Error.Value := +"Run: %%writefile <filename>.";
 
             IO_Pub.Stream
               (Name => +"stderr",
