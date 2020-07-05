@@ -8,11 +8,18 @@ The kernel accepts an Ada program piece by piece. A piece could be:
 with Ada.Text_IO;
 ```
 
-2. A sequence of [statements](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-5-1.html#S0146) to be executed:
+2. A sequence of [declarative items](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-3-11.html#S0087) to be elaborated:
 
 
 ```Ada
-Ada.Text_IO.Put_Line ("Hello World");
+Name : constant String := "World";
+```
+
+3. A sequence of [statements](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-5-1.html#S0146) to be executed:
+
+
+```Ada
+Ada.Text_IO.Put_Line ("Hello " & Name);
 ```
 
 
@@ -23,11 +30,20 @@ Ada.Text_IO.Put_Line ("Hello World");
 
 
 
-3. A sequence of [basic declarative items](http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-3-11.html#S0088) to be elaborated:
+Note: If one of declarative item requires a completion, then it should be in the same cell:
 
 
 ```Ada
-X : Integer := 1;
+package P is
+   procedure Proc;
+end;
+
+package body P is
+   procedure Proc is
+   begin
+      Ada.Text_IO.Put_Line ("Here is Proc!");
+   end;
+end;
 ```
 
 There are also some "magic" commands:
