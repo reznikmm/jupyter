@@ -29,6 +29,7 @@ private
      and Spawn.Processes.Process_Listener
    with record
       Gprbuild  : League.Strings.Universal_String;
+      Gnatchop  : League.Strings.Universal_String;
       Process   : Spawn.Processes.Process;
       Directory : League.Strings.Universal_String;
       --  Each session has its own directory
@@ -83,6 +84,7 @@ private
 
    type Kernel is limited new Jupyter.Kernels.Kernel with record
       Gprbuild : League.Strings.Universal_String;
+      Gnatchop : League.Strings.Universal_String;
       Driver   : League.Strings.Universal_String;
       Map      : Session_Maps.Map;
       Last_Id  : Natural := 0;

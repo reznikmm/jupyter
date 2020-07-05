@@ -57,6 +57,15 @@ package body Ada_Kernels is
       Error : out League.Strings.Universal_String);
    --  Check if given Code is a `clause` before a compilation unit
 
+   procedure Launch_Cell
+     (Self  : in out Session'Class;
+      GPR   : League.Strings.Universal_String;
+      Lib   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String);
+   --  Make a Lib library using given GPR and load it into driver. Return
+   --  Error and Text.
+
    procedure Statements_Probe
      (Self  : aliased in out Session'Class;
       Code  : League.Strings.Universal_String;
@@ -74,6 +83,19 @@ package body Ada_Kernels is
       Text  : out League.Strings.Universal_String;
       Error : out League.Strings.Universal_String);
    --  Check if given Code is a statement sequence
+
+   procedure Compilation_Unit_Probe
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String);
+   --  Check if given Code is a compilation unit sequence
+
+   procedure Read_File
+     (Name : League.Strings.Universal_String;
+      Text : out League.Strings.Universal_String);
 
    procedure Write_File
      (Name : League.Strings.Universal_String;
@@ -104,7 +126,7 @@ package body Ada_Kernels is
    function Image (Value : Natural) return League.Strings.Universal_String;
 
    type Cell_Kind is
-     (With_Cell, Execute_Cell, Run_Cell);
+     (With_Cell, Execute_Cell, Run_Cell, Run_Cell_Spec);
 
    procedure Create_Project_File
      (Self      : aliased in out Session'Class;
@@ -116,6 +138,10 @@ package body Ada_Kernels is
    function With_Runs
      (Self : Session'Class) return League.Strings.Universal_String;
    --  For each post run return `with Run_$; use Run_$;` clauses
+
+   function To_Spec (Text : League.Strings.Universal_String)
+     return League.Strings.Universal_String;
+   --  Turn Text of a subprogram body return corresponding specification
 
    Top_Dir : constant League.Strings.Universal_String := +"/tmp/jupyter/";
 
@@ -139,6 +165,108 @@ package body Ada_Kernels is
       end return;
    end "&";
 
+   ----------------------------
+   -- Compilation_Unit_Probe --
+   ----------------------------
+
+   procedure Compilation_Unit_Probe
+     (Self  : aliased in out Session'Class;
+      Code  : League.Strings.Universal_String;
+      Dir   : League.Strings.Universal_String;
+      Run   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String)
+   is
+      pragma Unreferenced (Text);
+      use type League.Strings.Universal_String;
+
+      GPR    : League.Strings.Universal_String;
+      Args   : League.String_Vectors.Universal_String_Vector;
+      Output : League.Strings.Universal_String;
+      Errors : League.Strings.Universal_String;
+      Name   : League.Strings.Universal_String;
+      Value  : League.Strings.Universal_String;
+      Spec   : constant League.Strings.Universal_String :=
+        Dir & Format (+"run_$.ads", Run);
+      Impl   : constant League.Strings.Universal_String :=
+        Dir & Format (+"run_$.adb", Run);
+      Status : Integer;
+      Names  : League.String_Vectors.Universal_String_Vector;
+      Clauses : constant League.Strings.Universal_String :=
+        Self.Clauses.Join (Line_Feed);
+      Has_Spec : Boolean := False;
+      Has_Body : Boolean := False;
+   begin
+      Write_File (Dir & "code", Code);
+      Args.Append (+"-w");
+      Args.Append (Dir & "code");
+      Args.Append (Dir);
+
+      Processes.Run
+        (Program   => Self.Gnatchop,
+         Arguments => Args,
+         Directory => Dir,
+         Output    => Output,
+         Errors    => Errors,
+         Status    => Status);
+
+      Names := Output.Split (Line_Feed);
+
+      for J in 1 .. Names.Length loop
+         Name := Names (J);
+
+         if Name.Starts_With ("   ") then
+            Name := Name.Tail_From (4);
+            Read_File (Name, Value);
+            Ada.Directories.Delete_File (Name.To_UTF_8_String);
+
+            if Name.Ends_With (".ads") then
+               Write_File
+                 (Spec,
+                  Self.With_Runs &
+                    Clauses &
+                    Format (+"package Run_$ is $ end;", Run, Value));
+
+               Has_Spec := True;
+            else
+               if not Has_Spec then
+                  Write_File
+                    (Spec,
+                     Self.With_Runs &
+                       Clauses &
+                       Format (+"package Run_$ is $ end;",
+                               Run, To_Spec (Value)));
+               end if;
+
+               Write_File
+                 (Impl,
+                  Format (+"package body Run_$ is $ end;", Run, Value));
+
+               Has_Body := True;
+            end if;
+         end if;
+      end loop;
+
+      if Has_Body then
+         Self.Create_Project_File (Dir, Run, Run_Cell, GPR);
+      elsif Has_Spec then
+         Self.Create_Project_File (Dir, Run, Run_Cell_Spec, GPR);
+      else
+         Error := Errors;
+         return;
+      end if;
+
+      Self.Launch_Cell
+        (GPR,
+         Format (+"$.libs/libjasrun_$.so", Dir, Run),
+         Text,
+         Error);
+
+      if Error.Is_Empty then
+         Self.Runs.Append (Run);
+      end if;
+   end Compilation_Unit_Probe;
+
    -------------------------
    -- Create_Project_File --
    -------------------------
@@ -161,10 +289,16 @@ package body Ada_Kernels is
       case Cell_Kind is
          when With_Cell =>
             Src := +"Unit & "".adb""";
+            Kind := +"with";
          when Execute_Cell =>
             Src := +"Unit & "".ads"", Unit & "".adb""";
+            Kind := +"execute";
          when Run_Cell =>
+            Src := +"Unit & "".ads"", Unit & "".adb""";
+            Kind := +"run";
+         when Run_Cell_Spec =>
             Src := +"Unit & "".ads""";
+            Kind := +"run";
       end case;
 
       for J in 1 .. Self.Runs.Length loop
@@ -174,7 +308,6 @@ package body Ada_Kernels is
 
       Comp := +"""-gnatW8"", ""-gnatVa"", ""-fstack-check"", ""-gnatv""";
       Bind := +"""-W8"", ""-E""";
-      Kind := Kind.Head_To (Kind.Length - 5).To_Lowercase;
       Name := Format (+"$_$", Kind, Run);
       Result := Dir & Name & ".gpr";
       Lines := Lines
@@ -219,6 +352,7 @@ package body Ada_Kernels is
 
       Object.Directory.Append ('/');
       Object.Gprbuild := Self.Gprbuild;
+      Object.Gnatchop := Self.Gnatchop;
       Self.Map.Insert (Session_Id, Object);
 
       Object.Process.Set_Working_Directory (Object.Directory.To_UTF_8_String);
@@ -243,13 +377,9 @@ package body Ada_Kernels is
    is
       use type League.Strings.Universal_String;
 
-      Args    : League.String_Vectors.Universal_String_Vector;
       GPR     : League.Strings.Universal_String;
-      Listing : League.Strings.Universal_String;
-      Errors  : League.Strings.Universal_String;
       Clauses : constant League.Strings.Universal_String :=
         Self.Clauses.Join (Line_Feed);
-      Status  : Integer;
    begin
       Write_File
         (Dir & Format (+"run_$.ads", Run),
@@ -257,40 +387,16 @@ package body Ada_Kernels is
          Clauses &
          Format (+"package Run_$ is $ end;", Run, Code));
 
-      Self.Create_Project_File (Dir, Run, Run_Cell, GPR);
-      Args.Append ("-P" & GPR);
+      Self.Create_Project_File (Dir, Run, Run_Cell_Spec, GPR);
 
-      Processes.Run
-        (Program   => Self.Gprbuild,
-         Arguments => Args,
-         Directory => Self.Directory,
-         Output    => Listing,
-         Errors    => Errors,
-         Status    => Status);
+      Self.Launch_Cell
+        (GPR,
+         Format (+"$.libs/libjasrun_$.so", Dir, Run),
+         Text,
+         Error);
 
-      if Status = 0 then
-         declare
-            Load   : League.Strings.Universal_String;
-            Ignore : Ada.Streams.Stream_Element_Offset;
-            Codec  : constant League.Text_Codecs.Text_Codec :=
-              League.Text_Codecs.Codec (+"UTF-8");
-         begin
-            Load := Format (+"Load $.libs/libjasrun_$.so", Dir, Run);
-            Load.Append (Line_Feed);
-            Self.Process.Write_Standard_Input
-              (Codec.Encode (Load).To_Stream_Element_Array, Ignore);
-            Self.Ready := False;
-
-            while not Self.Ready loop
-               Spawn.Processes.Monitor_Loop (Timeout => 50);
-            end loop;
-
-            Text := UTF_8.Decode (Self.Stdout);
-            Self.Stdout.Clear;
-            Self.Runs.Append (Run);
-         end;
-      else
-         Error := Listing;
+      if Error.Is_Empty then
+         Self.Runs.Append (Run);
       end if;
    end Declarations_Probe;
 
@@ -342,6 +448,7 @@ package body Ada_Kernels is
       With_Error : League.Strings.Universal_String;
       Stmt_Error : League.Strings.Universal_String;
       Decl_Error : League.Strings.Universal_String;
+      Unit_Error : League.Strings.Universal_String;
       Data : League.JSON.Objects.JSON_Object;
       Meta : League.JSON.Objects.JSON_Object;
       Text : League.Strings.Universal_String;
@@ -373,12 +480,16 @@ package body Ada_Kernels is
 
          if not Stmt_Error.Is_Empty then
             Self.Declarations_Probe (Code, Dir, Run, Text, Decl_Error);
+
+            if not Decl_Error.Is_Empty then
+               Self.Compilation_Unit_Probe (Code, Dir, Run, Text, Unit_Error);
+            end if;
          end if;
       end if;
 
       Expression_Values := League.JSON.Objects.Empty_JSON_Object;
 
-      if not Decl_Error.Is_Empty then
+      if not Unit_Error.Is_Empty then
          Text := +"Unable to process. Program state doesn't change!";
          Text.Append (Line_Feed);
          Text.Append (Line_Feed);
@@ -395,6 +506,11 @@ package body Ada_Kernels is
          Text.Append ("Errors for basic declarative items probe:");
          Text.Append (Line_Feed);
          Text.Append (Decl_Error);
+         Text.Append (Line_Feed);
+         Text.Append (Line_Feed);
+         Text.Append ("Errors for compilation unit probe:");
+         Text.Append (Line_Feed);
+         Text.Append (Unit_Error);
          Text.Append (Line_Feed);
 
          IO_Pub.Stream
@@ -568,16 +684,16 @@ package body Ada_Kernels is
       Error : out League.Strings.Universal_String) is
    begin
       Self.Gprbuild := Find_In_Path ("gprbuild");
+      Self.Gnatchop := Find_In_Path ("gnatchop");
       Self.Driver := Find_In_Path ("ada_driver");
 
       if Self.Gprbuild.Is_Empty then
          Error.Append ("No `gprbuild` in the PATH");
+      elsif Self.Gnatchop.Is_Empty then
+         Error.Append ("No `gnatchop` in the PATH");
       elsif Self.Driver.Is_Empty then
          Error.Append ("No `ada_driver` in the PATH");
-
-         return;
       end if;
-
    end Initialize;
 
    -----------------
@@ -605,6 +721,58 @@ package body Ada_Kernels is
       Result.Insert (+"status", -"ok");
    end Kernel_Info;
 
+   -----------------
+   -- Launch_Cell --
+   -----------------
+
+   procedure Launch_Cell
+     (Self  : in out Session'Class;
+      GPR   : League.Strings.Universal_String;
+      Lib   : League.Strings.Universal_String;
+      Text  : out League.Strings.Universal_String;
+      Error : out League.Strings.Universal_String)
+   is
+      use type League.Strings.Universal_String;
+      Args    : League.String_Vectors.Universal_String_Vector;
+      Listing : League.Strings.Universal_String;
+      Errors  : League.Strings.Universal_String;
+      Status  : Integer;
+   begin
+      Args.Append ("-P" & GPR);
+
+      Processes.Run
+        (Program   => Self.Gprbuild,
+         Arguments => Args,
+         Directory => Self.Directory,
+         Output    => Listing,
+         Errors    => Errors,
+         Status    => Status);
+
+      if Status = 0 then
+         declare
+            Load   : League.Strings.Universal_String;
+            Ignore : Ada.Streams.Stream_Element_Offset;
+            Codec  : constant League.Text_Codecs.Text_Codec :=
+              League.Text_Codecs.Codec (+"UTF-8");
+         begin
+            Load := Format (+"Load $", Lib);
+            Load.Append (Line_Feed);
+            Self.Process.Write_Standard_Input
+              (Codec.Encode (Load).To_Stream_Element_Array, Ignore);
+            Self.Ready := False;
+
+            while not Self.Ready loop
+               Spawn.Processes.Monitor_Loop (Timeout => 50);
+            end loop;
+
+            Text := UTF_8.Decode (Self.Stdout);
+            Self.Stdout.Clear;
+         end;
+      else
+         Error := Listing;
+      end if;
+   end Launch_Cell;
+
    ----------------------
    -- Parse_Line_Magic --
    ----------------------
@@ -631,6 +799,32 @@ package body Ada_Kernels is
          end;
       end loop;
    end Parse_Line_Magic;
+
+   ---------------
+   -- Read_File --
+   ---------------
+
+   procedure Read_File
+     (Name : League.Strings.Universal_String;
+      Text : out League.Strings.Universal_String)
+   is
+      Input  : Ada.Wide_Wide_Text_IO.File_Type;
+   begin
+      Ada.Wide_Wide_Text_IO.Open
+        (Input,
+         Mode => Ada.Wide_Wide_Text_IO.In_File,
+         Name => Name.To_UTF_8_String,
+         Form => "WCEM=8");
+
+      Text.Clear;
+
+      while not Ada.Wide_Wide_Text_IO.End_Of_File (Input) loop
+         Text.Append (Ada.Wide_Wide_Text_IO.Get_Line (Input));
+         Text.Append (Line_Feed);
+      end loop;
+
+      Ada.Wide_Wide_Text_IO.Close (Input);
+   end Read_File;
 
    ------------------------------
    -- Standard_Error_Available --
@@ -745,13 +939,9 @@ package body Ada_Kernels is
    is
       use type League.Strings.Universal_String;
 
-      Args    : League.String_Vectors.Universal_String_Vector;
       GPR     : League.Strings.Universal_String;
-      Listing : League.Strings.Universal_String;
-      Errors  : League.Strings.Universal_String;
       Clauses : constant League.Strings.Universal_String :=
         Self.Clauses.Join (Line_Feed);
-      Status  : Integer;
    begin
       Write_File
         (Dir & Format (+"execute_$.ads", Run),
@@ -766,40 +956,43 @@ package body Ada_Kernels is
          Format (+"package body Execute_$ is begin $ end;", Run, Code));
 
       Self.Create_Project_File (Dir, Run, Execute_Cell, GPR);
-      Args.Append ("-P" & GPR);
 
-      Processes.Run
-        (Program   => Self.Gprbuild,
-         Arguments => Args,
-         Directory => Self.Directory,
-         Output    => Listing,
-         Errors    => Errors,
-         Status    => Status);
-
-      if Status = 0 then
-         declare
-            Load   : League.Strings.Universal_String;
-            Ignore : Ada.Streams.Stream_Element_Offset;
-            Codec  : constant League.Text_Codecs.Text_Codec :=
-              League.Text_Codecs.Codec (+"UTF-8");
-         begin
-            Load := Format (+"Load $.libs/libjasexecute_$.so", Dir, Run);
-            Load.Append (Line_Feed);
-            Self.Process.Write_Standard_Input
-              (Codec.Encode (Load).To_Stream_Element_Array, Ignore);
-            Self.Ready := False;
-
-            while not Self.Ready loop
-               Spawn.Processes.Monitor_Loop (Timeout => 50);
-            end loop;
-
-            Text := UTF_8.Decode (Self.Stdout);
-            Self.Stdout.Clear;
-         end;
-      else
-         Error := Listing;
-      end if;
+      Self.Launch_Cell
+        (GPR,
+         Format (+"$.libs/libjasexecute_$.so", Dir, Run),
+         Text,
+         Error);
    end Statements_Probe;
+
+   -------------
+   -- To_Spec --
+   -------------
+
+   function To_Spec (Text : League.Strings.Universal_String)
+     return League.Strings.Universal_String
+   is
+      use type League.Strings.Universal_String;
+      Line  : League.Strings.Universal_String;
+      Lines : constant League.String_Vectors.Universal_String_Vector :=
+        Text.Split (Line_Feed);
+      Result : League.String_Vectors.Universal_String_Vector;
+   begin
+      for J in 1 .. Lines.Length loop
+         Line := Lines (J);
+
+         if Line.Ends_With (" is") then
+            Result.Append (Line.Head_To (Line.Length - 3) & ";");
+            exit;
+         elsif Line.Index (" is ") > 0 then
+            Result.Append (Line.Head_To (Line.Index (" is ")) & ";");
+            exit;
+         else
+            Result.Append (Line);
+         end if;
+      end loop;
+
+      return Result.Join (Line_Feed);
+   end To_Spec;
 
    -----------------------
    -- With_Clause_Probe --
@@ -865,6 +1058,7 @@ package body Ada_Kernels is
 
       return Result.Join (Line_Feed);
    end With_Runs;
+
    ----------------
    -- Write_File --
    ----------------
