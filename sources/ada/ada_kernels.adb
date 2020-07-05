@@ -16,6 +16,7 @@ with League.Text_Codecs;
 with Spawn.Processes.Monitor_Loop;
 
 with Magics.Ls_Magic;
+with Magics.Output;
 with Processes;
 
 package body Ada_Kernels is
@@ -37,6 +38,13 @@ package body Ada_Kernels is
       Args : out League.String_Vectors.Universal_String_Vector);
    --  Extract one line magic from Code, split it and put it into Args.
 
+   procedure Parse_Block_Magic
+     (Code : League.Strings.Universal_String;
+      Args : out League.String_Vectors.Universal_String_Vector;
+      Text : out League.Strings.Universal_String);
+   --  Extract block magic from the first line of the Code into Args and return
+   --  rest of the Code in Text.
+
    function Find_In_Path
      (File : String) return League.Strings.Universal_String;
 
@@ -46,7 +54,9 @@ package body Ada_Kernels is
       Execution_Counter : Positive;
       Magic             : League.String_Vectors.Universal_String_Vector;
       Silent            : Boolean;
-      Error             : in out Jupyter.Kernels.Execution_Error);
+      Error             : in out Jupyter.Kernels.Execution_Error;
+      Block             : League.Strings.Universal_String :=
+        League.Strings.Empty_Universal_String);
    --  Execute one line magic command.
 
    procedure With_Clause_Probe
@@ -461,12 +471,21 @@ package body Ada_Kernels is
 
       declare
          Magic : League.String_Vectors.Universal_String_Vector;
+         Block : League.Strings.Universal_String;
       begin
          Parse_Line_Magic (Code, Magic);
 
          if Magic.Length >= 1 then
             Self.Execute_Magic
               (IO_Pub, Execution_Counter, Magic, Silent, Error);
+            return;
+         end if;
+
+         Parse_Block_Magic (Code, Magic, Block);
+
+         if Magic.Length >= 1 then
+            Self.Execute_Magic
+              (IO_Pub, Execution_Counter, Magic, Silent, Error, Block);
             return;
          end if;
       end;
@@ -538,7 +557,9 @@ package body Ada_Kernels is
       Execution_Counter : Positive;
       Magic             : League.String_Vectors.Universal_String_Vector;
       Silent            : Boolean;
-      Error             : in out Jupyter.Kernels.Execution_Error)
+      Error             : in out Jupyter.Kernels.Execution_Error;
+      Block             : League.Strings.Universal_String :=
+        League.Strings.Empty_Universal_String)
    is
       pragma Unreferenced (Self, Execution_Counter);
       use type League.Strings.Universal_String;
@@ -547,6 +568,17 @@ package body Ada_Kernels is
    begin
       if First = +"%lsmagic" then
          Magics.Ls_Magic (IO_Pub, Silent);
+      elsif First = +"%%output" then
+         if Magic.Length = 2 then
+            Magics.Output (IO_Pub, Magic (2), Block, Silent);
+         else
+            Error.Name := +"UsageError";
+            Error.Value := +"Run: %%output MIME-type.";
+
+            IO_Pub.Stream
+              (Name => +"stderr",
+               Text => Error.Name & ": " & Error.Value);
+         end if;
       else
          Error.Name := +"UsageError";
          Error.Value := "Line magic function `" & First & "` not found.";
@@ -772,6 +804,32 @@ package body Ada_Kernels is
          Error := Listing;
       end if;
    end Launch_Cell;
+
+   -----------------------
+   -- Parse_Block_Magic --
+   -----------------------
+
+   procedure Parse_Block_Magic
+     (Code : League.Strings.Universal_String;
+      Args : out League.String_Vectors.Universal_String_Vector;
+      Text : out League.Strings.Universal_String)
+   is
+      Pos : constant Natural := Code.Index (Line_Feed);
+   begin
+      if Pos = 0 then
+         Args := Code.Split (' ');
+         Text.Clear;
+      else
+         Args := Code.Head_To (Pos - 1).Split (' ');
+         Text := Code.Tail_From (Pos + 1);
+      end if;
+
+      if Args.Length > 1 then
+         if not Args (1).Starts_With ("%%") then
+            Args.Clear;
+         end if;
+      end if;
+   end Parse_Block_Magic;
 
    ----------------------
    -- Parse_Line_Magic --

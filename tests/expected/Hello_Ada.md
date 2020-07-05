@@ -57,6 +57,6 @@ There are also some "magic" commands:
 
 
     Available line magics:
-    %lsmagic
+    %lsmagic %%output
 
 

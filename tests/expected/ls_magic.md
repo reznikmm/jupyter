@@ -6,7 +6,7 @@
 
 
     Available line magics:
-    %lsmagic
+    %lsmagic %%output
 
 
 
