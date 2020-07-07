@@ -566,12 +566,27 @@ package body Ada_Kernels is
       pragma Unreferenced (Self, Execution_Counter);
       use type League.Strings.Universal_String;
 
-      First : constant League.Strings.Universal_String := Magic (1);
+
+      Info  : League.Strings.Universal_String;
+      First : League.Strings.Universal_String := Magic (1);
+      Help  : constant Boolean := First.Ends_With ("?");
    begin
+      if Help then
+         First := First.Head_To (First.Length - 1);  --  String '?' if any
+      end if;
+
       if First = +"%lsmagic" then
-         Magics.Ls_Magic (IO_Pub, Silent);
+         if Help then
+            Info := +"List currently available magic functions.";
+         else
+            Magics.Ls_Magic (IO_Pub, Silent);
+         end if;
       elsif First = +"%%output" then
-         if Magic.Length = 2 then
+         if Help then
+            Info := (+"%%output MIME-type")
+              & Line_Feed & Line_Feed
+              & "Render the cell as a content of the given MIME-type.";
+         elsif Magic.Length = 2 then
             Magics.Output (IO_Pub, Magic (2), Block, Silent);
          else
             Error.Name := +"UsageError";
@@ -582,7 +597,11 @@ package body Ada_Kernels is
                Text => Error.Name & ": " & Error.Value);
          end if;
       elsif First = +"%%writefile" then
-         if Magic.Length = 2 then
+         if Help then
+            Info := (+"%%writefile filename")
+              & Line_Feed & Line_Feed
+              & "Write the contents of the cell to a file.";
+         elsif Magic.Length = 2 then
             Magics.Write_File (IO_Pub, Magic (2), Block, Silent);
          else
             Error.Name := +"UsageError";
@@ -594,11 +613,17 @@ package body Ada_Kernels is
          end if;
       else
          Error.Name := +"UsageError";
-         Error.Value := "Line magic function `" & First & "` not found.";
+         Error.Value := "Magic function `" & First & "` not found."
+           & Line_Feed & Line_Feed
+           & "Use %lsmagic to list available magic functions.";
 
          IO_Pub.Stream
            (Name => +"stderr",
             Text => Error.Name & ": " & Error.Value);
+      end if;
+
+      if not Info.Is_Empty then
+         IO_Pub.Stream (Name => +"stderr", Text => Info);
       end if;
    end Execute_Magic;
 

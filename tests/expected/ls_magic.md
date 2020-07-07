@@ -6,7 +6,7 @@
 
 
     Available line magics:
-    %lsmagic %%output %%writefile
+    %lsmagic? %%output? %%writefile?
 
 
 
@@ -15,4 +15,6 @@
 %lsmagic1 1
 ```
 
-    UsageError: Line magic function `%lsmagic1` not found.
+    UsageError: Magic function `%lsmagic1` not found.
+    
+    Use %lsmagic to list available magic functions.
