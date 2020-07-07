@@ -30,8 +30,8 @@ install:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/jupyter/kernels/ada
 	sed -e '/.objs/s#.[a-z_/][a-z_/]*#$(BINDIR)/ada_kernel#' kernels/ada/kernel.json >\
 	  $(DESTDIR)$(PREFIX)/share/jupyter/kernels/ada/kernel.json
-	mkdir -p $(DESTDIR)$(PREFIX)/lib/python3.7/site-packages/notebook/static/components/codemirror/mode/ada/
-	cp codemirror/mode/ada/ada.js $(DESTDIR)$(PREFIX)/lib/python3.7/site-packages/notebook/static/components/codemirror/mode/ada/
+	mkdir -p $(DESTDIR)$(PREFIX)/lib/python3.8/site-packages/notebook/static/components/codemirror/mode/ada/
+	cp codemirror/mode/ada/ada.js $(DESTDIR)$(PREFIX)/lib/python3.8/site-packages/notebook/static/components/codemirror/mode/ada/
 
 clean:
 	gprclean -q -P gnat/jupyter.gpr

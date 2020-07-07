@@ -20,8 +20,9 @@ package Ada_Kernels is
    type Kernel is limited new Jupyter.Kernels.Kernel with private;
 
    procedure Initialize
-     (Self  : in out Kernel'Class;
-      Error : out League.Strings.Universal_String);
+     (Self    : in out Kernel'Class;
+      Top_Dir : League.Strings.Universal_String;
+      Error   : out League.Strings.Universal_String);
 
 private
 
@@ -83,6 +84,7 @@ private
       Equivalent_Keys => "=");
 
    type Kernel is limited new Jupyter.Kernels.Kernel with record
+      Top_Dir  : League.Strings.Universal_String;
       Gprbuild : League.Strings.Universal_String;
       Gnatchop : League.Strings.Universal_String;
       Driver   : League.Strings.Universal_String;

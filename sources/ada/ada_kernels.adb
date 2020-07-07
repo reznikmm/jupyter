@@ -155,8 +155,6 @@ package body Ada_Kernels is
      return League.Strings.Universal_String;
    --  Turn Text of a subprogram body return corresponding specification
 
-   Top_Dir : constant League.Strings.Universal_String := +"/tmp/jupyter/";
-
    Line_Feed : constant Wide_Wide_Character :=
      Ada.Characters.Wide_Wide_Latin_1.LF;
 
@@ -351,7 +349,7 @@ package body Ada_Kernels is
       Session_Id : Positive;
       Result     : out Jupyter.Kernels.Session_Access)
    is
-      Dir    : League.Strings.Universal_String := Top_Dir;
+      Dir    : League.Strings.Universal_String := Self.Top_Dir;
       Object : constant Session_Access := new Session;
       PID    : constant Natural := GNAT.OS_Lib.Pid_To_Integer
          (GNAT.OS_Lib.Current_Process_Id);
@@ -750,9 +748,11 @@ package body Ada_Kernels is
    ----------------
 
    procedure Initialize
-     (Self  : in out Kernel'Class;
-      Error : out League.Strings.Universal_String) is
+     (Self    : in out Kernel'Class;
+      Top_Dir : League.Strings.Universal_String;
+      Error   : out League.Strings.Universal_String) is
    begin
+      Self.Top_Dir := Top_Dir;
       Self.Gprbuild := Find_In_Path ("gprbuild");
       Self.Gnatchop := Find_In_Path ("gnatchop");
       Self.Driver := Find_In_Path ("ada_driver");

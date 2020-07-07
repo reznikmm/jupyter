@@ -87,8 +87,8 @@ make check LD_LIBRARY_PATH=$PWD/.libs
 %dir %{_datadir}/jupyter/kernels/ada
 %{_datadir}/jupyter/kernels/ada/kernel.json
 %{_gprdir}/manifests/jupyter_ada_{kernel,driver}
-%dir %{_prefix}/lib/python3.7/site-packages/notebook/static/components/codemirror/mode/ada/
-%{_prefix}/lib/python3.7/site-packages/notebook/static/components/codemirror/mode/ada/ada.js
+%dir %{_prefix}/lib/python3.8/site-packages/notebook/static/components/codemirror/mode/ada/
+%{_prefix}/lib/python3.8/site-packages/notebook/static/components/codemirror/mode/ada/ada.js
 
 %changelog
 * Tue Jun 16 2020 Maxim Reznik <reznikmm@gmail.com> - 0.1.0-git
