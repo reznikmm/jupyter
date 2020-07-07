@@ -3,11 +3,9 @@
 --  SPDX-License-Identifier: MIT
 ----------------------------------------------------------------
 
-with Ada.Streams;
 with Ada.Characters.Wide_Wide_Latin_1;
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Containers.Hashed_Maps;
-with Ada.Strings.UTF_Encoding.Wide_Wide_Strings;
 with Ada.Wide_Wide_Text_IO;
 with GNAT.SHA256;
 with Interfaces.C;
@@ -141,9 +139,6 @@ is
 
    function Has_More (Message : ZMQ.Messages.Message) return Boolean;
 
-   package Byte_IO is new Ada.Wide_Wide_Text_IO.Modular_IO
-     (Ada.Streams.Stream_Element);
-
    type Session_Information is record
       Id    : Positive;
       Count : Positive;
@@ -205,8 +200,6 @@ is
       Socket.Bind (Address);
    end Bind;
 
-   Log  : Ada.Wide_Wide_Text_IO.File_Type;
-
    --------------
    -- Has_More --
    --------------
@@ -238,9 +231,6 @@ is
          --  No _request in msg_type, ignore it
          return;
       end if;
-
-      Ada.Wide_Wide_Text_IO.Put_Line (Log, Action.To_Wide_Wide_String);
-      Ada.Wide_Wide_Text_IO.Flush (Log);
 
       declare
          Content : League.JSON.Objects.JSON_Object;
@@ -416,9 +406,6 @@ is
             Text : constant String := MSG.GetData;
          begin
             More := Has_More (MSG);
-            Ada.Wide_Wide_Text_IO.Put_Line
-              (Log, Ada.Strings.UTF_Encoding.Wide_Wide_Strings.Decode (Text));
-            Ada.Wide_Wide_Text_IO.Flush (Log);
             GNAT.SHA256.Update (Digest, Text);
             Object := League.JSON.Documents.From_JSON
               (League.Strings.From_UTF_8_String (Text)).To_JSON_Object;
@@ -438,14 +425,6 @@ is
             Item := League.Stream_Element_Vectors.To_Stream_Element_Vector
               (From.GetData);
             Result.From.Append (Item);
-            for J in 1 .. Item.Length loop
-               Byte_IO.Put (Log, Item.Element (J), 3, 16);
-            end loop;
-            Ada.Wide_Wide_Text_IO.Put_Line
-              (Log,
-               Natural'Wide_Wide_Image (From.GetSize) &
-                 Boolean'Wide_Wide_Image (Has_More (From)));
-            Ada.Wide_Wide_Text_IO.Flush (Log);
             pragma Assert (Has_More (From));
          end;
       end loop;
@@ -465,20 +444,10 @@ is
          begin
             Temp.Initialize (0);
             Socket.Recv (Temp);
-            Ada.Wide_Wide_Text_IO.Put_Line
-              (Log,
-               "Temp=" & Natural'Wide_Wide_Image (Temp.GetSize) &
-                 Boolean'Wide_Wide_Image (Has_More (Temp)));
-            Ada.Wide_Wide_Text_IO.Flush (Log);
             More := Has_More (Temp);
          end;
       end loop;
 
-      Ada.Wide_Wide_Text_IO.Put_Line
-        (Log, Result.Signature.To_Wide_Wide_String & ' ' &
-           Ada.Strings.UTF_Encoding.Wide_Wide_Strings.Decode
-             (GNAT.SHA256.Digest (Digest)));
-      Ada.Wide_Wide_Text_IO.Flush (Log);
    end Read_Message;
 
    -----------------
@@ -500,12 +469,6 @@ is
       Digest : GNAT.SHA256.Context :=
         GNAT.SHA256.HMAC_Initial_Context (Key.To_UTF_8_String);
    begin
-      Ada.Wide_Wide_Text_IO.Put_Line (Log, "Send_Status");
-      Ada.Wide_Wide_Text_IO.Put_Line
-        (Log,
-         "To=" & Ada.Streams.Stream_Element_Offset'Wide_Wide_Image
-           (To.First_Element.Length));
-      Ada.Wide_Wide_Text_IO.Flush (Log);
       Object.Insert
         (+"msg_id",
          League.JSON.Values.To_JSON_Value
@@ -533,20 +496,10 @@ is
         (Digest,
          Content.To_JSON_Document.To_JSON.To_Stream_Element_Array);
 
-      Ada.Wide_Wide_Text_IO.Put_Line
-        (Log, Object.To_JSON_Document.To_JSON.To_Wide_Wide_String);
-      Ada.Wide_Wide_Text_IO.Put_Line
-        (Log, Parent.To_JSON_Document.To_JSON.To_Wide_Wide_String);
-      Ada.Wide_Wide_Text_IO.Put_Line
-        (Log, Content.To_JSON_Document.To_JSON.To_Wide_Wide_String);
-
       for X of To loop
          Socket.Send (X.To_Stream_Element_Array, 2);
-         for J in 1 .. X.Length loop
-            Byte_IO.Put (Log, X.Element (J), 3, 16);
-         end loop;
       end loop;
-      Ada.Wide_Wide_Text_IO.New_Line (Log);
+
       Socket.Send ("<IDS|MSG>", 2);
       Socket.Send (String'(GNAT.SHA256.Digest (Digest)), 2);
       Socket.Send
@@ -557,8 +510,6 @@ is
          2);
       Socket.Send ("{}", 2);
       Socket.Send (Content.To_JSON_Document.To_JSON.To_Stream_Element_Array);
-
-      Ada.Wide_Wide_Text_IO.Put_Line (Log, "------------------");
    end Send_Message;
 
    use type Interfaces.C.int;
@@ -570,18 +521,9 @@ is
    Frontend : aliased Frontend_Connection;
    Poll     : array (1 .. 4) of aliased ZMQ.Low_Level.zmq_pollitem_t;
 begin
-   Ada.Wide_Wide_Text_IO.Create (Log, Name => "/tmp/ker.log");
-   Ada.Wide_Wide_Text_IO.Put_Line
-     (Log, "Starting with " & File.To_Wide_Wide_String);
-   Ada.Wide_Wide_Text_IO.Flush (Log);
    Read_Connection_File (File, CF);
-   Ada.Wide_Wide_Text_IO.Put_Line
-     (Log, CF.Value (+"transport").To_String.To_Wide_Wide_String);
 
    Frontend.Key := CF.Value (+"key").To_String;
-   Ada.Wide_Wide_Text_IO.Put_Line
-     (Log, "Key=" & Frontend.Key.To_Wide_Wide_String);
-   Ada.Wide_Wide_Text_IO.Flush (Log);
 
    Bind (Frontend.Ctx, Frontend.Shell, CF, "shell_port", ZMQ.Sockets.ROUTER);
    Bind (Frontend.Ctx, Frontend.Stdin, CF, "stdin_port", ZMQ.Sockets.ROUTER);
