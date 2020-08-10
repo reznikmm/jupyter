@@ -233,8 +233,8 @@ package body Ada_Kernels is
             if Name.Ends_With (".ads") then
                Write_File
                  (Spec,
-                  Self.With_Runs &
-                    Clauses &
+                  Clauses &
+                    Self.With_Runs &
                     Format (+"package Run_$ is $ end;", Run, Value));
 
                Has_Spec := True;
@@ -242,8 +242,8 @@ package body Ada_Kernels is
                if not Has_Spec then
                   Write_File
                     (Spec,
-                     Self.With_Runs &
-                       Clauses &
+                     Clauses &
+                       Self.With_Runs &
                        Format (+"package Run_$ is $ end;",
                                Run, To_Spec (Value)));
                end if;
@@ -393,8 +393,8 @@ package body Ada_Kernels is
    begin
       Write_File
         (Dir & Format (+"run_$.ads", Run),
-         Self.With_Runs &
          Clauses &
+         Self.With_Runs &
          Format (+"package Run_$ is $ end;", Run, Code));
 
       Self.Create_Project_File (Dir, Run, Run_Cell_Spec, GPR);
@@ -1047,8 +1047,8 @@ package body Ada_Kernels is
 
       Write_File
         (Dir & Format (+"execute_$.adb", Run),
-         Self.With_Runs &
          Clauses &
+         Self.With_Runs &
          Format (+"package body Execute_$ is begin $ end;", Run, Code));
 
       Self.Create_Project_File (Dir, Run, Execute_Cell, GPR);
@@ -1113,8 +1113,8 @@ package body Ada_Kernels is
    begin
       Write_File
         (Dir & Format (+"with_$.adb", Run),
-         Self.With_Runs &
          Clauses &
+         Self.With_Runs &
          Code &
          Format (+"procedure With_$ is begin null; end;", Run));
 
