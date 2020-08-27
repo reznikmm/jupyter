@@ -862,7 +862,7 @@ package body Ada_Kernels is
          Text := Code.Tail_From (Pos + 1);
       end if;
 
-      if Args.Length > 1 then
+      if Args.Length >= 1 then
          if not Args (1).Starts_With ("%%") then
             Args.Clear;
          end if;
@@ -1133,6 +1133,8 @@ package body Ada_Kernels is
       if Status = 0 then
          Self.Clauses.Append
            (Code.Split (Line_Feed, League.Strings.Skip_Empty));
+      elsif Listing.Is_Empty then
+         Error := Errors;
       else
          Error := Listing;
       end if;
