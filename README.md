@@ -1,11 +1,19 @@
 Jupyter Client API in Ada
 =========================
 
-This is
+This is repositoru contains
 [Jupyter Client API](https://jupyter-client.readthedocs.io/en/stable/index.html)
-binding in Ada.
+binding and Ada Kernel written in Ada.
 
 ## Install
+### Using [alire](https://alire.ada.dev)
+
+    alr get --build jupyter_kernel
+    cd jupyter_kernel*
+    ln -s ./alire/build/.objs .
+    PATH=$PATH:$PWD/alire/build/.objs/driver JUPYTER_PATH=$PWD jupyter-notebook --debug
+
+### Build from sources
 Unpack source and run `make`.
 
 ### Dependencies
