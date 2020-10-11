@@ -13,6 +13,9 @@ It depends on
  * [Matreshka](https://forge.ada-ru.org/matreshka) library.
  * [ZeroMQ-Ada](https://github.com/persan/zeromq-Ada)
 
+For now the Ada Kernel runs on Linux and Mac OS X (not tested) only, because it uses `dlopen` to load shared
+libraries.
+
 ## Usage
 Run `make` to build the library and examples. Then run jupyter-notebook:
 

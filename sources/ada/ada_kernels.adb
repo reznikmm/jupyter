@@ -20,6 +20,7 @@ with Magics.Ls_Magic;
 with Magics.Output;
 with Magics.Write_File;
 
+with Ada_Kernels.Configuration;
 with Processes;
 
 package body Ada_Kernels is
@@ -162,6 +163,9 @@ package body Ada_Kernels is
    UTF_8 : constant League.Text_Codecs.Text_Codec :=
      League.Text_Codecs.Codec (+"UTF-8");
 
+   SO_Extension : Wide_Wide_String renames
+     Ada_Kernels.Configuration.Shared_Library_Suffix;
+
    ---------
    -- "&" --
    ---------
@@ -297,7 +301,7 @@ package body Ada_Kernels is
 
       Self.Launch_Cell
         (GPR,
-         Format (+"$.libs/libjasrun_$.so", Dir, Run),
+         Format (+"$.libs/libjasrun_$" & SO_Extension, Dir, Run),
          Text,
          Error);
 
@@ -430,7 +434,7 @@ package body Ada_Kernels is
 
       Self.Launch_Cell
         (GPR,
-         Format (+"$.libs/libjasrun_$.so", Dir, Run),
+         Format (+"$.libs/libjasrun_$" & SO_Extension, Dir, Run),
          Text,
          Error);
 
@@ -1124,7 +1128,7 @@ package body Ada_Kernels is
 
       Self.Launch_Cell
         (GPR,
-         Format (+"$.libs/libjasexecute_$.so", Dir, Run),
+         Format (+"$.libs/libjasexecute_$" & SO_Extension, Dir, Run),
          Text,
          Error);
    end Statements_Probe;

@@ -16,4 +16,19 @@ project Jupyter_Ada_Kernel is
 
    package Binder renames Jupyter.Binder;
 
+   package Naming is
+      case Spawn.OS_API is
+         when "unix" =>
+            for Specification ("Ada_Kernels.Configuration")
+              use "ada_kernels-config__linux.ads";
+
+         when "osx" =>
+            for Specification ("Ada_Kernels.Configuration")
+              use "ada_kernels-config__osx.ads";
+
+         when "Windows_NT" =>
+            null;
+      end case;
+   end Naming;
+
 end Jupyter_Ada_Kernel;
