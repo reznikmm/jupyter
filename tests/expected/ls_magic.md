@@ -6,7 +6,7 @@
 
 
     Available line magics:
-    %lsmagic? %%output? %%writefile?
+    %lsmagic? %%output? %%writefile? %gargs? %cargs? %largs? %bargs?
 
 
 

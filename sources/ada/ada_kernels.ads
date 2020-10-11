@@ -26,10 +26,22 @@ package Ada_Kernels is
 
 private
 
+   type Gprbuild_Options is record
+      Path  : League.Strings.Universal_String;
+      Gargs : League.String_Vectors.Universal_String_Vector;
+      Cargs : League.String_Vectors.Universal_String_Vector;
+      Largs : League.String_Vectors.Universal_String_Vector;
+      Bargs : League.String_Vectors.Universal_String_Vector;
+   end record;
+
+   procedure Append
+     (Args   : in out League.String_Vectors.Universal_String_Vector;
+      Option : Gprbuild_Options);
+
    type Session is limited new Jupyter.Kernels.Session
      and Spawn.Processes.Process_Listener
    with record
-      Gprbuild  : League.Strings.Universal_String;
+      Gprbuild  : Gprbuild_Options;
       Gnatchop  : League.Strings.Universal_String;
       Process   : Spawn.Processes.Process;
       Directory : League.Strings.Universal_String;

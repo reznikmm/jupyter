@@ -57,6 +57,6 @@ There are also some "magic" commands:
 
 
     Available line magics:
-    %lsmagic? %%output? %%writefile?
+    %lsmagic? %%output? %%writefile? %gargs? %cargs? %largs? %bargs?
 
 

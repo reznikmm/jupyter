@@ -15,6 +15,7 @@ with League.Text_Codecs;
 
 with Spawn.Processes.Monitor_Loop;
 
+with Magics.Gprbuild_Options;
 with Magics.Ls_Magic;
 with Magics.Output;
 with Magics.Write_File;
@@ -174,6 +175,34 @@ package body Ada_Kernels is
          Result.Append (Text);
       end return;
    end "&";
+
+   ------------
+   -- Append --
+   ------------
+
+   procedure Append
+     (Args   : in out League.String_Vectors.Universal_String_Vector;
+      Option : Gprbuild_Options)
+   is
+      procedure Append_Section
+        (Name : Wide_Wide_String;
+         Value : League.String_Vectors.Universal_String_Vector);
+
+      procedure Append_Section
+        (Name : Wide_Wide_String;
+         Value : League.String_Vectors.Universal_String_Vector) is
+      begin
+         if not Value.Is_Empty then
+            Args.Append (+Name);
+            Args.Append (Value);
+         end if;
+      end Append_Section;
+   begin
+      Args.Append (Option.Gargs);
+      Append_Section ("-cargs", Option.Cargs);
+      Append_Section ("-largs", Option.Largs);
+      Append_Section ("-bargs", Option.Bargs);
+   end Append;
 
    ----------------------------
    -- Compilation_Unit_Probe --
@@ -361,7 +390,7 @@ package body Ada_Kernels is
       Ada.Directories.Create_Path (Object.Directory.To_UTF_8_String);
 
       Object.Directory.Append ('/');
-      Object.Gprbuild := Self.Gprbuild;
+      Object.Gprbuild.Path := Self.Gprbuild;
       Object.Gnatchop := Self.Gnatchop;
       Self.Map.Insert (Session_Id, Object);
 
@@ -561,7 +590,7 @@ package body Ada_Kernels is
       Block             : League.Strings.Universal_String :=
         League.Strings.Empty_Universal_String)
    is
-      pragma Unreferenced (Self, Execution_Counter);
+      pragma Unreferenced (Execution_Counter);
       use type League.Strings.Universal_String;
 
 
@@ -578,6 +607,45 @@ package body Ada_Kernels is
             Info := +"List currently available magic functions.";
          else
             Magics.Ls_Magic (IO_Pub, Silent);
+         end if;
+      elsif First.To_Wide_Wide_String in
+        "%gargs" | "%cargs" | "%largs" | "%bargs"
+      then
+         if Help then
+            Info := (First & " {options}")
+              & Line_Feed & Line_Feed
+              & "Setup additional options for gprbuild in a -"
+              & First.Tail_From (2) & " section or reset if no option given.";
+         elsif First.Starts_With ("%g") then
+            Magics.Gprbuild_Options
+              (IO_Pub,
+               Silent,
+               Self.Gprbuild.Gargs,
+               +"-gargs",
+               Magic.Slice (2, Magic.Length));
+         elsif First.Starts_With ("%c") then
+            Magics.Gprbuild_Options
+              (IO_Pub,
+               Silent,
+               Self.Gprbuild.Cargs,
+               +"-cargs",
+               Magic.Slice (2, Magic.Length));
+         elsif First.Starts_With ("%l") then
+            Magics.Gprbuild_Options
+              (IO_Pub,
+               Silent,
+               Self.Gprbuild.Largs,
+               +"-largs",
+               Magic.Slice (2, Magic.Length));
+         elsif First.Starts_With ("%b") then
+            Magics.Gprbuild_Options
+              (IO_Pub,
+               Silent,
+               Self.Gprbuild.Bargs,
+               +"-bargs",
+               Magic.Slice (2, Magic.Length));
+         else
+            null;
          end if;
       elsif First = +"%%output" then
          if Help then
@@ -809,9 +877,10 @@ package body Ada_Kernels is
       Status  : Integer;
    begin
       Args.Append ("-P" & GPR);
+      Append (Args, Self.Gprbuild);  --  Append custom options
 
       Processes.Run
-        (Program   => Self.Gprbuild,
+        (Program   => Self.Gprbuild.Path,
          Arguments => Args,
          Directory => Self.Directory,
          Output    => Listing,
@@ -1121,9 +1190,10 @@ package body Ada_Kernels is
       Self.Create_Project_File (Dir, Run, With_Cell, GPR);
       Args.Append ("-P" & GPR);
       Args.Append (+"-c");  --  Just compile
+      Append (Args, Self.Gprbuild);  --  Append custom options
 
       Processes.Run
-        (Program   => Self.Gprbuild,
+        (Program   => Self.Gprbuild.Path,
          Arguments => Args,
          Directory => Self.Directory,
          Output    => Listing,
