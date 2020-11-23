@@ -26,6 +26,7 @@ package body IO_Pubs is
 
       Send_Message
         (Self.Up.IOPub,
+         Self.Up.Msg_Id,
          -(+"stream"),
          Self.Up.Key,
          "stream",
@@ -67,6 +68,7 @@ package body IO_Pubs is
 
       Send_Message
         (Self.Up.IOPub,
+         Self.Up.Msg_Id,
          -(+"execute_result"),
          Self.Up.Key,
          "execute_result",

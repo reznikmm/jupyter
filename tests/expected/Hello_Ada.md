@@ -57,6 +57,55 @@ There are also some "magic" commands:
 
 
     Available line magics:
-    %lsmagic? %%output? %%writefile? %gargs? %cargs? %largs? %bargs?
+    %lsmagic? %alr? %%output? %%writefile? %gargs? %cargs? %largs? %bargs?
+
+
+
+You can use `%alr` magic command to install dependencies from the
+[Ada Library Repository](https://alire.ada.dev/). Only shared library
+projects are supported.
+
+
+```Ada
+%alr -q with spawn
+```
+
+
+
+
+    Do you want to proceed?
+    Using default: Yes
+
+
+
+
+
+
+
+    Do you want Alire to automatically update your project file with the new dependency solution?
+    Using default: Yes
+    Do you want Alire to remember this choice?
+    Using default: No
+
+
+
+
+After installing a crate with `%alr` you can use its units in `with` clauses:
+
+
+```Ada
+with Spawn.Environments;
+```
+
+
+```Ada
+Ada.Text_IO.Put_Line (Spawn.Environments.System_Environment.Contains ("PATH")'Image);
+```
+
+
+
+
+    TRUE
+
 
 

@@ -14,6 +14,7 @@ with League.Strings;
 with Spawn.Processes;
 
 with Jupyter.Kernels;
+with Processes;
 
 package Ada_Kernels is
 
@@ -43,6 +44,7 @@ private
    with record
       Gprbuild  : Gprbuild_Options;
       Gnatchop  : League.Strings.Universal_String;
+      ALR       : League.Strings.Universal_String;
       Process   : Spawn.Processes.Process;
       Directory : League.Strings.Universal_String;
       --  Each session has its own directory
@@ -55,6 +57,7 @@ private
       Ready     : Boolean := True;  --  Driver's ready to get next Command
       Clauses   : League.String_Vectors.Universal_String_Vector;
       Runs      : League.String_Vectors.Universal_String_Vector;
+      Build_Env : Processes.Environment;
    end record;
 
    overriding procedure Execute
@@ -99,6 +102,7 @@ private
       Top_Dir  : League.Strings.Universal_String;
       Gprbuild : League.Strings.Universal_String;
       Gnatchop : League.Strings.Universal_String;
+      ALR      : League.Strings.Universal_String;
       Driver   : League.Strings.Universal_String;
       Map      : Session_Maps.Map;
       Last_Id  : Natural := 0;

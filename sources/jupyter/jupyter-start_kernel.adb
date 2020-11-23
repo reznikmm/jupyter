@@ -53,6 +53,7 @@ is
       IOPub   : ZMQ.Sockets.Socket;
       Control : ZMQ.Sockets.Socket;
       Ping    : ZMQ.Sockets.Socket;
+      Msg_Id  : Integer := -1;
    end record;
 
    package IO_Pubs is
@@ -109,6 +110,7 @@ is
 
    procedure Send_Message
      (Socket  : in out ZMQ.Sockets.Socket;
+      Msg_Id  : in out Integer;
       To      : Address_Lists.List;
       Key     : League.Strings.Universal_String;
       Kind    : Wide_Wide_String;
@@ -238,6 +240,7 @@ is
          Content.Insert (+"execution_state", -"busy");
          Send_Message
            (Frontend.IOPub,
+            Frontend.Msg_Id,
             -Topic,
             Frontend.Key,
             "status",
@@ -249,6 +252,7 @@ is
          Kernel.Kernel_Info (Reply);
          Send_Message
            (Frontend.Shell,
+            Frontend.Msg_Id,
             Request.From,
             Frontend.Key,
             "kernel_info_reply",
@@ -289,6 +293,7 @@ is
 
             Send_Message
               (Frontend.IOPub,
+               Frontend.Msg_Id,
                -(+"execute_input"),
                Frontend.Key,
                "execute_input",
@@ -324,6 +329,7 @@ is
 
             Send_Message
               (Frontend.Shell,
+               Frontend.Msg_Id,
                Request.From,
                Frontend.Key,
                "execute_reply",
@@ -338,6 +344,7 @@ is
          Content.Insert (+"execution_state", -"idle");
          Send_Message
            (Frontend.IOPub,
+            Frontend.Msg_Id,
             -Topic,
             Frontend.Key,
             "status",
@@ -456,6 +463,7 @@ is
 
    procedure Send_Message
      (Socket  : in out ZMQ.Sockets.Socket;
+      Msg_Id  : in out Integer;
       To      : Address_Lists.List;
       Key     : League.Strings.Universal_String;
       Kind    : Wide_Wide_String;
@@ -465,14 +473,13 @@ is
         League.JSON.Objects.Empty_JSON_Object)
    is
       use type League.Strings.Universal_String;
+      Image  : constant Wide_Wide_String := Integer'Wide_Wide_Image (Msg_Id);
       Object : League.JSON.Objects.JSON_Object;
       Digest : GNAT.SHA256.Context :=
         GNAT.SHA256.HMAC_Initial_Context (Key.To_UTF_8_String);
    begin
-      Object.Insert
-        (+"msg_id",
-         League.JSON.Values.To_JSON_Value
-           (Parent.Value (+"msg_id").To_String & Kind));
+      Msg_Id := Msg_Id - 1;
+      Object.Insert (+"msg_id", League.JSON.Values.To_JSON_Value (+Image));
 
       Object.Insert (+"session", Parent.Value (+"session"));
       Object.Insert (+"username", Parent.Value (+"username"));

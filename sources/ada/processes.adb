@@ -9,6 +9,7 @@ with Ada.Exceptions;
 with League.Stream_Element_Vectors;
 with League.Text_Codecs;
 
+with Spawn.Environments;
 with Spawn.Processes.Monitor_Loop;
 with Spawn.Processes;
 with Spawn.String_Vectors;
@@ -24,9 +25,10 @@ package body Processes is
    ---------
 
    procedure Run
-     (Program   :     League.Strings.Universal_String;
-      Arguments :     League.String_Vectors.Universal_String_Vector;
-      Directory :     League.Strings.Universal_String;
+     (Program   : League.Strings.Universal_String;
+      Arguments : League.String_Vectors.Universal_String_Vector;
+      Directory : League.Strings.Universal_String;
+      Env       : Environment := No_Env;
       Output    : out League.Strings.Universal_String;
       Errors    : out League.Strings.Universal_String;
       Status    : out Integer)
@@ -36,6 +38,7 @@ package body Processes is
          Errors : League.Stream_Element_Vectors.Stream_Element_Vector;
          Status : Integer := 0;
          Done   : Boolean := False;
+         Write  : Boolean := True;
       end record;
 
       procedure Standard_Output_Available (Self : in out Listener);
@@ -54,6 +57,9 @@ package body Processes is
          Occurrence : Ada.Exceptions.Exception_Occurrence);
 
       Process : Spawn.Processes.Process;
+
+      Codec : constant League.Text_Codecs.Text_Codec :=
+        League.Text_Codecs.Codec_For_Application_Locale;
 
       -------------------------------
       -- Standard_Output_Available --
@@ -125,9 +131,6 @@ package body Processes is
          Self.Done := True;
       end Exception_Occurred;
 
-      Codec : constant League.Text_Codecs.Text_Codec :=
-        League.Text_Codecs.Codec_For_Application_Locale;
-
       Args     : Spawn.String_Vectors.UTF_8_String_Vector;
       Feedback : aliased Listener;
    begin
@@ -136,6 +139,21 @@ package body Processes is
       for J in 1 .. Arguments.Length loop
          Args.Append (Arguments (J).To_UTF_8_String);
       end loop;
+
+      if Env /= No_Env then
+         declare
+            Environment : Spawn.Environments.Process_Environment :=
+              Process.Environment;
+         begin
+            for J in 1 .. Env.Names.Length loop
+               Environment.Insert
+                 (Env.Names (J).To_UTF_8_String,
+                  Env.Values (J).To_UTF_8_String);
+            end loop;
+
+            Process.Set_Environment (Environment);
+         end;
+      end if;
 
       Process.Set_Arguments (Args);
       Process.Set_Working_Directory (Directory.To_UTF_8_String);

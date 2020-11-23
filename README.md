@@ -1,5 +1,5 @@
-Jupyter Client API in Ada
-=========================
+Jupyter Kernel and Client API in Ada
+====================================
 
 This is repositoru contains
 [Jupyter Client API](https://jupyter-client.readthedocs.io/en/stable/index.html)
@@ -11,15 +11,19 @@ binding and Ada Kernel written in Ada.
     alr get --build jupyter_kernel
     cd jupyter_kernel*
     ln -s ./alire/build/.objs .
-    PATH=$PATH:$PWD/alire/build/.objs/driver JUPYTER_PATH=$PWD jupyter-notebook --debug
+    LIBRARY_TYPE=relocatable \
+      PATH=$PATH:$PWD/alire/build/.objs/driver \
+      JUPYTER_PATH=$PWD jupyter-notebook --debug
 
 ### Build from sources
 Unpack source and run `make`.
 
 ### Dependencies
 It depends on
- * [Matreshka](https://forge.ada-ru.org/matreshka) library.
- * [ZeroMQ-Ada](https://github.com/persan/zeromq-Ada)
+ * [GNAT](https://www.adacore.com/download/more) Ada compiler and `gprbuild` tool
+ * [Matreshka](https://forge.ada-ru.org/matreshka) library
+ * [ZeroMQ-Ada](https://github.com/persan/zeromq-Ada) binding to zeromq
+ * [Alire](https://alire.ada.dev/) package manager (optional)
 
 For now the Ada Kernel runs on Linux and Mac OS X (not tested) only, because it uses `dlopen` to load shared
 libraries.
@@ -30,6 +34,10 @@ Run `make` to build the library and examples. Then run jupyter-notebook:
 ```
 JUPYTER_PATH=$PWD jupyter-notebook --debug
 ```
+
+Now you can open a notebook file, for example `tests/Hello_Ada.ipynb`.
+If you are going to use `alr` make sure to set `LIBRARY_TYPE=relocatable` environment
+variable to force `alr` build projects as shared libraries.
 
 ## Related works
 * [Jupyter Ada kernel](https://github.com/gusthoff/jupyter-ada-kernel)

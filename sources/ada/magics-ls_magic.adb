@@ -20,7 +20,7 @@ begin
    if not Silent then
       Result.Append ("Available line magics:");
       Result.Append (Ada.Characters.Wide_Wide_Latin_1.LF);
-      Result.Append ("%lsmagic? %%output? %%writefile? ");
+      Result.Append ("%lsmagic? %alr? %%output? %%writefile? ");
       Result.Append ("%gargs? %cargs? %largs? %bargs?");
 
       Data.Insert (+"text/plain", League.JSON.Values.To_JSON_Value (Result));

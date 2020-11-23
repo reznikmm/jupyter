@@ -15,13 +15,13 @@ with League.Text_Codecs;
 
 with Spawn.Processes.Monitor_Loop;
 
+with Magics.ALR;
 with Magics.Gprbuild_Options;
 with Magics.Ls_Magic;
 with Magics.Output;
 with Magics.Write_File;
 
 with Ada_Kernels.Configuration;
-with Processes;
 
 package body Ada_Kernels is
    function "+" (Text : Wide_Wide_String)
@@ -248,6 +248,7 @@ package body Ada_Kernels is
       Processes.Run
         (Program   => Self.Gnatchop,
          Arguments => Args,
+         Env       => Self.Build_Env,
          Directory => Dir,
          Output    => Output,
          Errors    => Errors,
@@ -344,12 +345,17 @@ package body Ada_Kernels is
             Kind := +"run";
       end case;
 
+      if not Self.ALR.Is_Empty then
+         Lines.Append (+"with ""../notebook.gpr"";");
+      end if;
+
       for J in 1 .. Self.Runs.Length loop
          Lines := Lines
            & Format (+"with ""../.run$/run_$.gpr"";", Self.Runs (J));
       end loop;
 
-      Comp := +"""-gnatW8"", ""-gnatVa"", ""-fstack-check"", ""-gnatv""";
+      Comp :=
+        +"""-gnatW8"", ""-gnatVa"", ""-fstack-check"", ""-gnatv"", ""-g""";
       Bind := +"""-W8"", ""-E""";
       Name := Format (+"$_$", Kind, Run);
       Result := Dir & Name & ".gpr";
@@ -382,6 +388,46 @@ package body Ada_Kernels is
       Session_Id : Positive;
       Result     : out Jupyter.Kernels.Session_Access)
    is
+      use type League.Strings.Universal_String;
+
+      procedure ALR_Init (Dir : League.Strings.Universal_String);
+
+      procedure ALR_Init (Dir : League.Strings.Universal_String) is
+         Args   : League.String_Vectors.Universal_String_Vector;
+         Output : League.Strings.Universal_String;
+         Errors : League.Strings.Universal_String;
+         Status : Integer;
+      begin
+         Args.Append (+"--non-interactive");
+         Args.Append (+"--no-tty");
+         Args.Append (+"--no-color");
+         Args.Append (+"init");
+         Args.Append (+"--in-place");
+         Args.Append (+"--no-skel");
+         Args.Append (+"--lib");
+         Args.Append (+"notebook");
+
+         Processes.Run
+           (Program   => Self.ALR,
+            Arguments => Args,
+            Directory => Dir,
+            Output    => Output,
+            Errors    => Errors,
+            Status    => Status);
+
+         if Status /= 0 then
+            Ada.Wide_Wide_Text_IO.Put_Line
+              (Ada.Wide_Wide_Text_IO.Standard_Error,
+               Output.To_Wide_Wide_String);
+
+            Ada.Wide_Wide_Text_IO.Put_Line
+              (Ada.Wide_Wide_Text_IO.Standard_Error,
+               Errors.To_Wide_Wide_String);
+         end if;
+
+         pragma Assert (Status = 0);
+      end ALR_Init;
+
       Dir    : League.Strings.Universal_String := Self.Top_Dir;
       Object : constant Session_Access := new Session;
       PID    : constant Natural := GNAT.OS_Lib.Pid_To_Integer
@@ -396,7 +442,16 @@ package body Ada_Kernels is
       Object.Directory.Append ('/');
       Object.Gprbuild.Path := Self.Gprbuild;
       Object.Gnatchop := Self.Gnatchop;
+      Object.ALR := Self.ALR;
       Self.Map.Insert (Session_Id, Object);
+
+      if not Self.ALR.Is_Empty then
+         ALR_Init (Object.Directory);
+
+         Write_File
+           (Object.Directory & "notebook.gpr",
+            +"abstract project Notebook is end Notebook;");
+      end if;
 
       Object.Process.Set_Working_Directory (Object.Directory.To_UTF_8_String);
       Object.Process.Set_Program (Self.Driver.To_UTF_8_String);
@@ -606,7 +661,21 @@ package body Ada_Kernels is
          First := First.Head_To (First.Length - 1);  --  String '?' if any
       end if;
 
-      if First = +"%lsmagic" then
+      if First = +"%alr" then
+         if Help then
+            Info := (First & " {options}")
+              & Line_Feed & Line_Feed
+              & "Execute alr {options} to manage project dependencies.";
+         else
+            Magics.ALR
+              (IO_Pub,
+               Self.ALR,
+               Self.Directory,
+               Magic.Slice (2, Magic.Length),
+               Self.Build_Env,
+               Silent);
+         end if;
+      elsif First = +"%lsmagic" then
          if Help then
             Info := +"List currently available magic functions.";
          else
@@ -704,12 +773,17 @@ package body Ada_Kernels is
    function Find_In_Path
      (File : String) return League.Strings.Universal_String
    is
+      use type GNAT.OS_Lib.String_Access;
+
       Found  : GNAT.OS_Lib.String_Access;
       Result : League.Strings.Universal_String;
    begin
       Found := GNAT.OS_Lib.Locate_Exec_On_Path (File);
-      Result := League.Strings.From_UTF_8_String (Found.all);
-      GNAT.OS_Lib.Free (Found);
+
+      if Found /= null then
+         Result := League.Strings.From_UTF_8_String (Found.all);
+         GNAT.OS_Lib.Free (Found);
+      end if;
 
       return Result;
    end Find_In_Path;
@@ -827,6 +901,7 @@ package body Ada_Kernels is
       Self.Top_Dir := Top_Dir;
       Self.Gprbuild := Find_In_Path ("gprbuild");
       Self.Gnatchop := Find_In_Path ("gnatchop");
+      Self.ALR := Find_In_Path ("alr");
       Self.Driver := Find_In_Path ("ada_driver");
 
       if Self.Gprbuild.Is_Empty then
@@ -880,12 +955,14 @@ package body Ada_Kernels is
       Errors  : League.Strings.Universal_String;
       Status  : Integer;
    begin
+      Args.Append (+"-p");
       Args.Append ("-P" & GPR);
       Append (Args, Self.Gprbuild);  --  Append custom options
 
       Processes.Run
         (Program   => Self.Gprbuild.Path,
          Arguments => Args,
+         Env       => Self.Build_Env,
          Directory => Self.Directory,
          Output    => Listing,
          Errors    => Errors,
@@ -1192,6 +1269,7 @@ package body Ada_Kernels is
          Format (+"procedure With_$ is begin null; end;", Run));
 
       Self.Create_Project_File (Dir, Run, With_Cell, GPR);
+      Args.Append (+"-p");
       Args.Append ("-P" & GPR);
       Args.Append (+"-c");  --  Just compile
       Append (Args, Self.Gprbuild);  --  Append custom options
@@ -1199,6 +1277,7 @@ package body Ada_Kernels is
       Processes.Run
         (Program   => Self.Gprbuild.Path,
          Arguments => Args,
+         Env       => Self.Build_Env,
          Directory => Self.Directory,
          Output    => Listing,
          Errors    => Errors,
