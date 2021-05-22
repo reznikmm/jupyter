@@ -60,7 +60,7 @@ make  %{?_smp_mflags} GPRBUILD_FLAGS="%Gnatmake_optflags"
 
 %install
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} PREFIX=%{_prefix} GPRDIR=%{_gprdir} BINDIR=%{_bindir} PYTHON=python3.9
+make install DESTDIR=%{buildroot} LIBDIR=%{_libdir} PREFIX=%{_prefix} GPRDIR=%{_gprdir} BINDIR=%{_bindir} PYTHON=python%{python3_version}
 
 %check
 make check LD_LIBRARY_PATH=$PWD/.libs
@@ -89,8 +89,8 @@ make check LD_LIBRARY_PATH=$PWD/.libs
 %dir %{_datadir}/jupyter/kernels/ada
 %{_datadir}/jupyter/kernels/ada/kernel.json
 %{_gprdir}/manifests/jupyter_ada_{kernel,driver}
-%dir %{_prefix}/lib/python3.9/site-packages/notebook/static/components/codemirror/mode/ada/
-%{_prefix}/lib/python3.9/site-packages/notebook/static/components/codemirror/mode/ada/ada.js
+%dir %{_prefix}/lib/python%{python3_version}/site-packages/notebook/static/components/codemirror/mode/ada/
+%{_prefix}/lib/python%{python3_version}/site-packages/notebook/static/components/codemirror/mode/ada/ada.js
 
 %changelog
 * Tue Jun 16 2020 Maxim Reznik <reznikmm@gmail.com> - 0.1.0-git

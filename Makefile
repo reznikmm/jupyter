@@ -47,5 +47,5 @@ check:
 	  ADA_PROJECT_PATH=$(PWD)/gnat \
 	  JUPYTER_PATH=. jupyter nbconvert --KernelManager.shutdown_wait_time=0.5 \
 	    --allow-errors --to markdown --execute $$FILE.ipynb; \
-	  diff -u tests/expected/$$FILE.md $$FILE.md; \
+	  diff -uB tests/expected/$$FILE.md $$FILE.md; \
 	done
