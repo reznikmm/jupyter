@@ -1,6 +1,8 @@
 Jupyter Kernel and Client API in Ada
 ====================================
 
+[![Copr build status](https://copr.fedorainfracloud.org/coprs/reznik/ada/package/jupyter-ada/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/reznik/ada/)
+
 This is repositoru contains
 [Jupyter Client API](https://jupyter-client.readthedocs.io/en/stable/index.html)
 binding and Ada Kernel written in Ada.
@@ -55,3 +57,4 @@ or submit PRs.
 ## License
 
 [MIT](LICENSES/MIT.txt) © Maxim Reznik
+
