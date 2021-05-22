@@ -78,8 +78,9 @@ private
    overriding procedure Standard_Error_Available (Self : in out Session);
 
    overriding procedure Finished
-    (Self      : in out Session;
-     Exit_Code : Integer);
+    (Self        : in out Session;
+     Exit_Status : Spawn.Processes.Process_Exit_Status;
+     Exit_Code   : Spawn.Processes.Process_Exit_Code);
 
    overriding procedure Error_Occurred
     (Self          : in out Session;

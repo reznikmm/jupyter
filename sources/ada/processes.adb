@@ -45,8 +45,9 @@ package body Processes is
       procedure Standard_Error_Available (Self : in out Listener);
 
       procedure Finished
-        (Self      : in out Listener;
-         Exit_Code : Integer);
+        (Self        : in out Listener;
+         Exit_Status : Spawn.Processes.Process_Exit_Status;
+         Exit_Code   : Spawn.Processes.Process_Exit_Code);
 
       procedure Error_Occurred
         (Self          : in out Listener;
@@ -98,10 +99,12 @@ package body Processes is
       --------------
 
       procedure Finished
-        (Self      : in out Listener;
-         Exit_Code : Integer) is
+        (Self        : in out Listener;
+         Exit_Status : Spawn.Processes.Process_Exit_Status;
+         Exit_Code   : Spawn.Processes.Process_Exit_Code) is
+         pragma Unreferenced (Exit_Status);
       begin
-         Self.Status := Exit_Code;
+         Self.Status := Integer (Exit_Code);
          Self.Done := True;
       end Finished;
 

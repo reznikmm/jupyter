@@ -795,10 +795,11 @@ package body Ada_Kernels is
    --------------
 
    overriding procedure Finished
-    (Self      : in out Session;
-     Exit_Code : Integer)
+     (Self        : in out Session;
+      Exit_Status : Spawn.Processes.Process_Exit_Status;
+      Exit_Code   : Spawn.Processes.Process_Exit_Code)
    is
-      pragma Unreferenced (Exit_Code);
+      pragma Unreferenced (Exit_Status, Exit_Code);
    begin
       Self.Finished := True;
    end Finished;

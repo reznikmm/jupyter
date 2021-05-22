@@ -58,22 +58,25 @@ is
          Ok      : Boolean := False;
         end record;
 
-      procedure Standard_Input_Available (Self : in out Listener) is null;
-      procedure Started (Self : in out Listener) is null;
+      overriding procedure Standard_Input_Available (Self : in out Listener)
+        is null;
 
-      procedure Finished
-        (Self      : in out Listener;
-         Exit_Code : Integer);
+      overriding procedure Started (Self : in out Listener) is null;
 
-      procedure Error_Occurred
+      overriding procedure Finished
+        (Self        : in out Listener;
+         Exit_Status : Spawn.Processes.Process_Exit_Status;
+         Exit_Code   : Spawn.Processes.Process_Exit_Code);
+
+      overriding procedure Error_Occurred
         (Self          : in out Listener;
          Process_Error : Integer);
 
-      procedure Exception_Occurred
+      overriding procedure Exception_Occurred
         (Self       : in out Listener;
          Occurrence : Ada.Exceptions.Exception_Occurrence);
 
-      procedure Standard_Error_Available (Self : in out Listener);
+      overriding procedure Standard_Error_Available (Self : in out Listener);
 
    end Base;
 
@@ -87,6 +90,7 @@ is
         (Self          : in out Listener;
          Process_Error : Integer)
       is
+         pragma Unreferenced (Self);
          Result : League.Strings.Universal_String;
       begin
          Result.Append (+"Unexpected error:");
@@ -121,16 +125,18 @@ is
       --------------
 
       procedure Finished
-        (Self      : in out Listener;
-         Exit_Code : Integer)
+        (Self        : in out Listener;
+         Exit_Status : Spawn.Processes.Process_Exit_Status;
+         Exit_Code   : Spawn.Processes.Process_Exit_Code)
       is
+         use all type Spawn.Processes.Process_Exit_Status;
          Result : League.Strings.Universal_String;
       begin
-         if Exit_Code = 0 then
+         if Exit_Status = Normal then
             Self.Ok := True;
          else
             Result.Append (+"Exit code: ");
-            Result.Append (+Integer'Wide_Wide_Image (Exit_Code));
+            Result.Append (+Exit_Code'Wide_Wide_Image);
             Write (Result);
          end if;
 
@@ -229,17 +235,18 @@ is
          Write  : Boolean := True;
       end record;
 
-      procedure Standard_Output_Available (Self : in out Listener);
+      overriding procedure Standard_Output_Available (Self : in out Listener);
 
-      procedure Finished
-        (Self      : in out Listener;
-         Exit_Code : Integer);
+      overriding procedure Finished
+        (Self        : in out Listener;
+         Exit_Status : Spawn.Processes.Process_Exit_Status;
+         Exit_Code   : Spawn.Processes.Process_Exit_Code);
 
-      procedure Error_Occurred
+      overriding procedure Error_Occurred
         (Self          : in out Listener;
          Process_Error : Integer);
 
-      procedure Exception_Occurred
+      overriding procedure Exception_Occurred
         (Self       : in out Listener;
          Occurrence : Ada.Exceptions.Exception_Occurrence);
 
@@ -254,6 +261,7 @@ is
         (Self          : in out Listener;
          Process_Error : Integer)
       is
+         pragma Unreferenced (Self);
          Result : League.Strings.Universal_String;
       begin
          Result.Append (+"Unexpected error:");
@@ -288,16 +296,18 @@ is
       --------------
 
       procedure Finished
-        (Self      : in out Listener;
-         Exit_Code : Integer)
+        (Self        : in out Listener;
+         Exit_Status : Spawn.Processes.Process_Exit_Status;
+         Exit_Code   : Spawn.Processes.Process_Exit_Code)
       is
+         use all type Spawn.Processes.Process_Exit_Status;
          Result : League.Strings.Universal_String;
       begin
-         if Exit_Code = 0 then
+         if Exit_Status = Normal then
             Self.Ok := True;
          else
             Result.Append (+"Exit code: ");
-            Result.Append (+Integer'Wide_Wide_Image (Exit_Code));
+            Result.Append (+Exit_Code'Wide_Wide_Image);
             Write (Result);
          end if;
 
