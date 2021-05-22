@@ -6,7 +6,6 @@
 with Ada.Characters.Wide_Wide_Latin_1;
 with Ada.Directories;
 with Ada.Streams;
-with Ada.Wide_Wide_Text_IO;
 
 with GNAT.OS_Lib;
 
@@ -345,9 +344,7 @@ package body Ada_Kernels is
             Kind := +"run";
       end case;
 
-      if not Self.ALR.Is_Empty then
-         Lines.Append (+"with ""../notebook.gpr"";");
-      end if;
+      Lines.Append (+"with ""../notebook.gpr"";");
 
       for J in 1 .. Self.Runs.Length loop
          Lines := Lines
@@ -447,17 +444,22 @@ package body Ada_Kernels is
 
       if not Self.ALR.Is_Empty then
          ALR_Init (Object.Directory);
-
-         Write_File
-           (Object.Directory & "notebook.gpr",
-            +"abstract project Notebook is end Notebook;");
       end if;
+
+      Write_File
+        (Object.Directory & "notebook.gpr",
+         +"abstract project Notebook is end Notebook;");
 
       Object.Process.Set_Working_Directory (Object.Directory.To_UTF_8_String);
       Object.Process.Set_Program (Self.Driver.To_UTF_8_String);
       Object.Process.Set_Listener
         (Spawn.Processes.Process_Listener_Access (Object));
       Object.Process.Start;
+
+      Ada.Wide_Wide_Text_IO.Create
+        (Object.Trace,
+         Name => Object.Directory.To_UTF_8_String & "trace.log");
+
       Result := Jupyter.Kernels.Session_Access (Object);
    end Create_Session;
 
@@ -976,6 +978,9 @@ package body Ada_Kernels is
               League.Text_Codecs.Codec (+"UTF-8");
          begin
             Load := Format (+"Load $", Lib);
+            Ada.Wide_Wide_Text_IO.Put_Line
+              (Self.Trace, Load.To_Wide_Wide_String);
+            Ada.Wide_Wide_Text_IO.Flush (Self.Trace);
             Load.Append (Line_Feed);
             Self.Process.Write_Standard_Input
               (Codec.Encode (Load).To_Stream_Element_Array, Ignore);

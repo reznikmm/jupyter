@@ -5,6 +5,7 @@
 
 with Ada.Containers.Hashed_Maps;
 with Ada.Exceptions;
+with Ada.Wide_Wide_Text_IO;
 
 with League.JSON.Objects;
 with League.Stream_Element_Vectors;
@@ -58,6 +59,7 @@ private
       Clauses   : League.String_Vectors.Universal_String_Vector;
       Runs      : League.String_Vectors.Universal_String_Vector;
       Build_Env : Processes.Environment;
+      Trace     : Ada.Wide_Wide_Text_IO.File_Type;
    end record;
 
    overriding procedure Execute
