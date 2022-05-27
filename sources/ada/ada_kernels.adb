@@ -1,7 +1,7 @@
---  SPDX-FileCopyrightText: 2020 Max Reznik <reznikmm@gmail.com>
+--  SPDX-FileCopyrightText: 2020-2022 Max Reznik <reznikmm@gmail.com>
 --
 --  SPDX-License-Identifier: MIT
-----------------------------------------------------------------
+---------------------------------------------------------------------
 
 with Ada.Characters.Wide_Wide_Latin_1;
 with Ada.Directories;
@@ -400,7 +400,6 @@ package body Ada_Kernels is
          Args.Append (+"--no-color");
          Args.Append (+"init");
          Args.Append (+"--in-place");
-         Args.Append (+"--no-skel");
          Args.Append (+"--lib");
          Args.Append (+"notebook");
 
@@ -442,13 +441,13 @@ package body Ada_Kernels is
       Object.ALR := Self.ALR;
       Self.Map.Insert (Session_Id, Object);
 
-      if not Self.ALR.Is_Empty then
+      if Self.ALR.Is_Empty then
+         Write_File
+           (Object.Directory & "notebook.gpr",
+            +"abstract project Notebook is end Notebook;");
+      else
          ALR_Init (Object.Directory);
       end if;
-
-      Write_File
-        (Object.Directory & "notebook.gpr",
-         +"abstract project Notebook is end Notebook;");
 
       Object.Process.Set_Working_Directory (Object.Directory.To_UTF_8_String);
       Object.Process.Set_Program (Self.Driver.To_UTF_8_String);

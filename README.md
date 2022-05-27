@@ -25,6 +25,7 @@ It depends on
  * [GNAT](https://www.adacore.com/download/more) Ada compiler and `gprbuild` tool
  * [Matreshka](https://forge.ada-ru.org/matreshka) library
  * [ZeroMQ-Ada](https://github.com/persan/zeromq-Ada) binding to zeromq
+ * [Spawn](https://github.com/AdaCore/spawn) - a process launch library
  * [Alire](https://alire.ada.dev/) package manager (optional)
 
 For now the Ada Kernel runs on Linux and Mac OS X (not tested) only, because it uses `dlopen` to load shared
