@@ -12,8 +12,7 @@ binding and Ada Kernel written in Ada.
 
     alr get --build jupyter_kernel
     cd jupyter_kernel*
-    LIBRARY_TYPE=relocatable \
-      JUPYTER_PATH=$PWD jupyter-notebook --debug
+    JUPYTER_PATH=$PWD jupyter-notebook --debug
 
 ### Build from sources
 Unpack source and run `make`.
@@ -37,8 +36,7 @@ JUPYTER_PATH=$PWD jupyter-notebook --debug
 ```
 
 Now you can open a notebook file, for example `tests/Hello_Ada.ipynb`.
-If you are going to use `alr` make sure to set `LIBRARY_TYPE=relocatable` environment
-variable to force `alr` build projects as shared libraries.
+If you are going to use `alr` make sure to build projects as shared libraries.
 
 ## Related works
 * [Jupyter Ada kernel](https://github.com/gusthoff/jupyter-ada-kernel)

@@ -460,6 +460,9 @@ package body Ada_Kernels is
         (Object.Trace,
          Name => Object.Directory.To_UTF_8_String & "trace.log");
 
+      Object.Build_Env.Names.Append (+"LIBRARY_TYPE");
+      Object.Build_Env.Values.Append (+"relocatable");
+
       Result := Jupyter.Kernels.Session_Access (Object);
    end Create_Session;
 

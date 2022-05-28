@@ -43,7 +43,6 @@ check:
 	set -e -x; for J in tests/*.ipynb; do \
 	  FILE=`basename $$J .ipynb`; \
 	  cp -v $$J .; \
-	  LIBRARY_TYPE=relocatable \
 	  ADA_PROJECT_PATH=$(PWD)/gnat \
 	  JUPYTER_PATH=. jupyter nbconvert --KernelManager.shutdown_wait_time=0.5 \
 	    --allow-errors --to markdown --execute $$FILE.ipynb; \
