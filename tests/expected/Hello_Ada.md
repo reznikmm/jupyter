@@ -79,17 +79,6 @@ projects are supported.
 
 
 
-
-
-
-    Do you want Alire to automatically update your project file with the new dependency solution?
-    Using default: Yes
-    Do you want Alire to remember this choice?
-    Using default: No
-
-
-
-
 After installing a crate with `%alr` you can use its units in `with` clauses:
 
 

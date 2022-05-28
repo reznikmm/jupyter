@@ -3,6 +3,7 @@
 --  SPDX-License-Identifier: MIT
 ---------------------------------------------------------------------
 
+with Ada.Command_Line;
 with Ada.Characters.Wide_Wide_Latin_1;
 with Ada.Directories;
 with Ada.Streams;
@@ -898,13 +899,21 @@ package body Ada_Kernels is
    procedure Initialize
      (Self    : in out Kernel'Class;
       Top_Dir : League.Strings.Universal_String;
-      Error   : out League.Strings.Universal_String) is
+      Error   : out League.Strings.Universal_String)
+   is
+      Exe : String := Ada.Command_Line.Command_Name;
    begin
+      if Exe'Length > 6 and then Exe (Exe'Last - 5 .. Exe'Last) = "kernel" then
+         Exe (Exe'Last - 5 .. Exe'Last) := "driver";
+         Self.Driver := Find_In_Path (Exe);
+      else
+         Self.Driver := Find_In_Path ("ada_driver");
+      end if;
+
       Self.Top_Dir := Top_Dir;
       Self.Gprbuild := Find_In_Path ("gprbuild");
       Self.Gnatchop := Find_In_Path ("gnatchop");
       Self.ALR := Find_In_Path ("alr");
-      Self.Driver := Find_In_Path ("ada_driver");
 
       if Self.Gprbuild.Is_Empty then
          Error.Append ("No `gprbuild` in the PATH");

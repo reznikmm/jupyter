@@ -1,6 +1,6 @@
 {
     "argv": [
-        ".objs/ada_kernel/ada_kernel",
+        ".bin/ada_kernel",
         "{connection_file}"
     ],
     "display_name": "Ada",

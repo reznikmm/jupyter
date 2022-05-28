@@ -12,9 +12,7 @@ binding and Ada Kernel written in Ada.
 
     alr get --build jupyter_kernel
     cd jupyter_kernel*
-    ln -s ./alire/build/.objs .
     LIBRARY_TYPE=relocatable \
-      PATH=$PATH:$PWD/alire/build/.objs/driver \
       JUPYTER_PATH=$PWD jupyter-notebook --debug
 
 ### Build from sources

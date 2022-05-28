@@ -4,8 +4,7 @@ long-description = '''# Jupyter Kernel for Ada
 To run this kernel with Jupyter Notebook:
     alr get --build jupyter_kernel
     cd jupyter_kernel*
-    ln -s ./alire/build/.objs .
-    PATH=$PATH:$PWD/alire/build/.objs/driver JUPYTER_PATH=$PWD jupyter-notebook --debug
+    JUPYTER_PATH=$PWD jupyter-notebook --debug
 '''
 
 name = "jupyter_kernel"
