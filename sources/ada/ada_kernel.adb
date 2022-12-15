@@ -1,7 +1,7 @@
---  SPDX-FileCopyrightText: 2020 Max Reznik <reznikmm@gmail.com>
+--  SPDX-FileCopyrightText: 2020-2022 Max Reznik <reznikmm@gmail.com>
 --
 --  SPDX-License-Identifier: MIT
-----------------------------------------------------------------
+---------------------------------------------------------------------
 
 with Ada.Directories;
 with Ada.Environment_Variables;
@@ -38,16 +38,11 @@ procedure Ada_Kernel is
          return Result;
       end Append;
 
-      Tmp  : constant String := Ada.Environment_Variables.Value ("TMPDIR", "");
-      Temp : constant String := Ada.Environment_Variables.Value ("TEMP", "");
+      Tmp  : constant String := Ada.Environment_Variables.Value
+        ("TMPDIR",
+         Ada.Environment_Variables.Value ("TEMP", "/tmp"));
    begin
-      if Tmp /= "" then
-         return Append (Tmp);
-      elsif Temp /= "" then
-         return Append (Temp);
-      else
-         return Append ("/tmp");
-      end if;
+      return Append (Tmp);
    end Get_Top_Directory;
 
    Kernel : Ada_Kernels.Kernel;

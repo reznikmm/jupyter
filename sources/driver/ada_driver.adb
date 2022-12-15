@@ -18,7 +18,8 @@ procedure Ada_Driver is
    procedure Service_Message (Text : String) is
       Switch : constant String := (1 => Ada.Characters.Latin_1.NUL);
    begin
-      Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, Switch & Text & Switch);
+      Ada.Text_IO.Put
+        (Ada.Text_IO.Standard_Error, Switch & Text & Switch);
    end Service_Message;
 
 begin
@@ -28,7 +29,8 @@ begin
       begin
          if Line'Length > 5 and Line (1 .. 5) = "Load " then
             declare
-               Error : constant String := Load_Library (Line (6 .. Line'Last));
+               Error : constant String :=
+                 Load_Library (Line (6 .. Line'Last));
             begin
                if Error /= "" then
                   Service_Message ("%jad_error:" & Error);

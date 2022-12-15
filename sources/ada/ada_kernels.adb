@@ -3,7 +3,6 @@
 --  SPDX-License-Identifier: MIT
 ---------------------------------------------------------------------
 
-with Ada.Command_Line;
 with Ada.Characters.Wide_Wide_Latin_1;
 with Ada.Directories;
 with Ada.Streams;
@@ -14,6 +13,8 @@ with League.JSON.Values;
 with League.Text_Codecs;
 
 with Spawn.Processes.Monitor_Loop;
+
+with Embedded;
 
 with Magics.ALR;
 with Magics.Gprbuild_Options;
@@ -657,13 +658,12 @@ package body Ada_Kernels is
       pragma Unreferenced (Execution_Counter);
       use type League.Strings.Universal_String;
 
-
       Info  : League.Strings.Universal_String;
       First : League.Strings.Universal_String := Magic (1);
       Help  : constant Boolean := First.Ends_With ("?");
    begin
       if Help then
-         First := First.Head_To (First.Length - 1);  --  String '?' if any
+         First := First.Head_To (First.Length - 1);  --  Strip '?' if any
       end if;
 
       if First = +"%alr" then
@@ -902,21 +902,42 @@ package body Ada_Kernels is
    procedure Initialize
      (Self    : in out Kernel'Class;
       Top_Dir : League.Strings.Universal_String;
-      Error   : out League.Strings.Universal_String)
-   is
-      Exe : String := Ada.Command_Line.Command_Name;
+      Error   : out League.Strings.Universal_String) is
    begin
-      if Exe'Length > 6 and then Exe (Exe'Last - 5 .. Exe'Last) = "kernel" then
-         Exe (Exe'Last - 5 .. Exe'Last) := "driver";
-         Self.Driver := Find_In_Path (Exe);
-      else
-         Self.Driver := Find_In_Path ("ada_driver");
-      end if;
-
       Self.Top_Dir := Top_Dir;
       Self.Gprbuild := Find_In_Path ("gprbuild");
       Self.Gnatchop := Find_In_Path ("gnatchop");
       Self.ALR := Find_In_Path ("alr");
+
+      Embedded.Write_Texts (Top_Dir);
+
+      declare
+         Args : League.String_Vectors.Universal_String_Vector;
+         Status : Integer;
+         Output : League.Strings.Universal_String;
+         Errors : League.Strings.Universal_String;
+      begin
+         Args.Append (+"ada_driver.adb");
+
+         Processes.Run
+           (Program   => Self.Gprbuild,
+            Arguments => Args,
+            Directory => Top_Dir,
+            Output    => Output,
+            Errors    => Errors,
+            Status    => Status);
+
+         if Status = 0 then
+            Self.Driver := Top_Dir;
+            Self.Driver.Append ("ada_driver");
+         else
+            Error.Append (Errors);
+         end if;
+      end;
+
+      if Self.Driver.Is_Empty then
+         Self.Driver := Find_In_Path ("ada_driver");
+      end if;
 
       if Self.Gprbuild.Is_Empty then
          Error.Append ("No `gprbuild` in the PATH");
@@ -1005,8 +1026,12 @@ package body Ada_Kernels is
             Text := UTF_8.Decode (Self.Stdout);
             Self.Stdout.Clear;
          end;
-      else
+      elsif not Listing.Is_Empty then
          Error := Listing;
+      elsif not Errors.Is_Empty then
+         Error := Errors;
+      else
+         Error := "Exit status: " & Image (Status);
       end if;
    end Launch_Cell;
 

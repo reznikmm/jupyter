@@ -3,7 +3,7 @@ Upstream-Name: jupyter
 Upstream-Contact: Max Reznik <reznikmm@gmail.com>
 Source: https://github.com/reznikmm/jupyter
 
-Files: README.md alire.toml
+Files: README.md alire.toml sources/ada/embedded-texts.ads sources/driver/embed.sh
 Copyright: 2020 Max Reznik <reznikmm@gmail.com>
 License: MIT
 

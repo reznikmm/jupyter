@@ -85,7 +85,6 @@ make check LD_LIBRARY_PATH=$PWD/.libs
 
 %files kernel
 %{_bindir}/ada_kernel
-%{_bindir}/ada_driver
 %dir %{_datadir}/jupyter/kernels/ada
 %{_datadir}/jupyter/kernels/ada/kernel.json
 %{_gprdir}/manifests/jupyter_ada_{kernel,driver}

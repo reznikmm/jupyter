@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - test
+    tags:
+      - v[0-9]*
 name: Build
 jobs:
   build:

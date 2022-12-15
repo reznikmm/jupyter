@@ -21,12 +21,10 @@ all:
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter.gpr
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_hello_world.gpr
 	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_ada_kernel.gpr
-	gprbuild $(GPRBUILD_FLAGS) -P gnat/jupyter_ada_driver.gpr
 
 install:
 	gprinstall $(GPRINSTALL_FLAGS) -p -P gnat/jupyter.gpr -XHARDWARE_PLATFORM=x86_64
 	gprinstall $(GPRINSTALL_FLAGS) -p -P gnat/jupyter_ada_kernel.gpr --mode=usage -XHARDWARE_PLATFORM=x86_64
-	gprinstall $(GPRINSTALL_FLAGS) -p -P gnat/jupyter_ada_driver.gpr --mode=usage -XHARDWARE_PLATFORM=x86_64
 	mkdir -p $(DESTDIR)$(PREFIX)/share/jupyter/kernels/ada
 	sed -e '/.objs/s#.[a-z_/][a-z_/]*#$(BINDIR)/ada_kernel#' kernels/ada/kernel.json >\
 	  $(DESTDIR)$(PREFIX)/share/jupyter/kernels/ada/kernel.json
@@ -37,9 +35,9 @@ clean:
 	gprclean -q -P gnat/jupyter.gpr
 	gprclean -q -P gnat/jupyter_hello_world.gpr
 	gprclean -q -P gnat/jupyter_ada_kernel.gpr
-	gprclean -q -P gnat/jupyter_ada_driver.gpr
 
 check:
+	#alr --non-interactive toolchain --select gnat_external gprbuild
 	set -e -x; for J in tests/*.ipynb; do \
 	  FILE=`basename $$J .ipynb`; \
 	  cp -v $$J .; \
