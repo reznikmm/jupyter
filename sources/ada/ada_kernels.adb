@@ -346,7 +346,7 @@ package body Ada_Kernels is
             Kind := +"run";
       end case;
 
-      Lines.Append (+"with ""../notebook.gpr"";");
+      Lines.Append (+"with ""../notebook_config.gpr"";");
 
       for J in 1 .. Self.Runs.Length loop
          Lines := Lines
@@ -413,7 +413,33 @@ package body Ada_Kernels is
             Errors    => Errors,
             Status    => Status);
 
-         if Status /= 0 then
+         if Status = 0 then
+            declare
+               Output : Ada.Wide_Wide_Text_IO.File_Type;
+            begin
+               Ada.Wide_Wide_Text_IO.Open
+                 (Output,
+                  Ada.Wide_Wide_Text_IO.Append_File,
+                  Dir.To_UTF_8_String & "alire.toml");
+               Ada.Wide_Wide_Text_IO.New_Line (Output);
+               Ada.Wide_Wide_Text_IO.Put_Line
+                 (Output, "configuration.output_dir = "".""");
+               Ada.Wide_Wide_Text_IO.Close (Output);
+            end;
+
+            Args.Clear;
+            Args.Append (+"update");
+
+            Processes.Run
+              (Program   => Self.ALR,
+               Arguments => Args,
+               Directory => Dir,
+               Output    => Output,
+               Errors    => Errors,
+               Status    => Status);
+
+            pragma Assert (Status = 0);
+         else
             Ada.Wide_Wide_Text_IO.Put_Line
               (Ada.Wide_Wide_Text_IO.Standard_Error,
                Output.To_Wide_Wide_String);
@@ -422,8 +448,6 @@ package body Ada_Kernels is
               (Ada.Wide_Wide_Text_IO.Standard_Error,
                Errors.To_Wide_Wide_String);
          end if;
-
-         pragma Assert (Status = 0);
       end ALR_Init;
 
       Dir    : League.Strings.Universal_String := Self.Top_Dir;
@@ -445,8 +469,8 @@ package body Ada_Kernels is
 
       if Self.ALR.Is_Empty then
          Write_File
-           (Object.Directory & "notebook.gpr",
-            +"abstract project Notebook is end Notebook;");
+           (Object.Directory & "notebook_config.gpr",
+            +"abstract project Notebook_Config is end Notebook;");
       else
          ALR_Init (Object.Directory);
       end if;
