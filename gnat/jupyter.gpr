@@ -5,23 +5,26 @@
 
 with "zmq.gpr";
 with "matreshka_league";
+with "jupyter_kernel_config.gpr";
 
 project Jupyter is
 
    Version := "0.1.0";
 
+   type Library_Type_Type is ("relocatable", "static", "static-pic");
+   Library_Type : Library_Type_Type :=
+     external ("JUPYTER_LIBRARY_TYPE", external ("LIBRARY_TYPE", "relocatable"));
+   for Library_Kind use Library_Type;
+
    for Source_Dirs use ("../sources/jupyter");
-   for Object_Dir use "../.objs";
-   for Library_Kind use "dynamic";
+   for Object_Dir use "../.objs/" & Library_Type;
    for Library_Name use "jupyterada";
    for Library_Dir use "../.libs";
    for Library_ALI_Dir use "../.libs/jupyterada";
    for Library_Version use "libjupyterada.so." & Version;
 
    package Compiler is
-      for Default_Switches ("ada") use
-        ("-gnat12", "-gnatW8", "-g", "-gnatVa", "-gnatwea", "-gnaty",
-         "-gnata");
+      for Default_Switches ("Ada") use Jupyter_Kernel_Config.Ada_Compiler_Switches;
    end Compiler;
 
    package Binder is
