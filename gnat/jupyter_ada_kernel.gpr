@@ -10,12 +10,28 @@ project Jupyter_Ada_Kernel is
 
    for Source_Dirs use ("../sources/ada");
    for Main use ("ada_kernel.adb");
-   for Object_Dir use "../.objs/ada_kernel";
+   for Object_Dir use "../.objs/ada_kernel/" & Jupyter.Library_Type;
    for Exec_Dir use "../.bin";
 
    package Compiler renames Jupyter.Compiler;
 
-   package Binder renames Jupyter.Binder;
+   package Binder is
+      case Jupyter.Library_Type is
+         when "static" | "static-pic" =>
+            for Switches ("ada") use ("-static", "-E", "-W8");
+         when "relocatable" =>
+            for Switches ("ada") use ("-E", "-W8");
+      end case;
+   end Binder;
+
+   package Linker is
+      case Jupyter.Library_Type is
+         when "static" | "static-pic" =>
+            for Switches ("ada") use ("-static");
+         when "relocatable" =>
+            null;
+      end case;
+   end Linker;
 
    package Naming is
       case Spawn.OS_API is
