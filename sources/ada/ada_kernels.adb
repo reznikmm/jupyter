@@ -12,6 +12,7 @@ with GNAT.OS_Lib;
 with League.JSON.Values;
 with League.Text_Codecs;
 
+with Spawn.Process_Listeners;
 with Spawn.Processes.Monitor_Loop;
 
 with Embedded;
@@ -221,7 +222,6 @@ package body Ada_Kernels is
       Text  : out League.Strings.Universal_String;
       Error : out League.Strings.Universal_String)
    is
-      pragma Unreferenced (Text);
       use type League.Strings.Universal_String;
 
       GPR    : League.Strings.Universal_String;
@@ -478,7 +478,7 @@ package body Ada_Kernels is
       Object.Process.Set_Working_Directory (Object.Directory.To_UTF_8_String);
       Object.Process.Set_Program (Self.Driver.To_UTF_8_String);
       Object.Process.Set_Listener
-        (Spawn.Processes.Process_Listener_Access (Object));
+        (Spawn.Process_Listeners.Process_Listener_Access (Object));
       Object.Process.Start;
 
       Ada.Wide_Wide_Text_IO.Create
@@ -1044,7 +1044,7 @@ package body Ada_Kernels is
             Self.Ready := False;
 
             while not Self.Ready loop
-               Spawn.Processes.Monitor_Loop (Timeout => 50);
+               Spawn.Processes.Monitor_Loop (Timeout => 0.05);
             end loop;
 
             Text := UTF_8.Decode (Self.Stdout);

@@ -164,7 +164,7 @@ package body Processes is
       Process.Start;
 
       while not Feedback.Done loop
-         Spawn.Processes.Monitor_Loop (Timeout => 50);
+         Spawn.Processes.Monitor_Loop (Timeout => 0.05);
       end loop;
 
       Output := Codec.Decode (Feedback.Output);
