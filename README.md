@@ -8,6 +8,16 @@ This is repositoru contains
 binding and Ada Kernel written in Ada.
 
 ## Install
+
+### From GitHub release
+
+Download [the latest release](https://github.com/reznikmm/jupyter/releases) and unzip it
+in some directory. Move `kernel.json` into `$HOME/.local/share/jupyter/kernels/ada/kernel.json`,
+then edit it by replacing `.bin` with the directory where `ada_kernel` is.
+You can also export `JUPYTER_PATH` to help IDE find `kernel.json`:
+
+    export JUPYTER_PATH=$HOME/.local/share/jupyter
+
 ### Using [alire](https://alire.ada.dev)
 
     alr get --build jupyter_kernel
