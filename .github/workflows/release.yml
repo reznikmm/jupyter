@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2022 Max Reznik <reznikmm@gmail.com>
+#
+# SPDX-License-Identifier: MIT
+
+on:
+  push:
+    branches:
+      - test
+    tags:
+      - v[0-9]*
+name: Build
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and deploy static binaries
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: jupyter
+      - uses: actions/checkout@v3
+        with:
+          repository: zeromq/libzmq
+          path: libzmq
+      - uses: actions/checkout@v3
+        with:
+          repository: persan/zeromq-Ada
+          path: zeromq-Ada
+      - uses: actions/checkout@v3
+        with:
+          repository: AdaCore/spawn
+          path: spawn
+      - uses: actions/checkout@v3
+        with:
+          repository: godunko/matreshka
+          path: matreshka
+      - name: Build static binary
+        run: |
+          set -x -e
+          sudo apt install -y gcc g++ gnat-11 gprbuild make libtool pkg-config
+          export PKG_CONFIG_PATH=$PWD/prefix/lib/pkgconfig/
+          sed -i -e '/libzmq.gpr/s/^/--  /' zeromq-Ada/zmq.gpr
+          cd libzmq
+          ./autogen.sh
+          ./configure --enable-static --disable-shared --prefix=$PWD/../prefix
+          make all install
+          cd ..
+          make -C matreshka reconfig
+          sed -i -e '/Library_Kind/s/dynamic/static/' matreshka/gnat/*.gpr
+          gprbuild -XLIBRARY_TYPE=static -aP zeromq-Ada/ -aP spawn/gnat/ \
+            -aP matreshka/gnat/ -P jupyter/gnat/jupyter_ada_kernel.gpr -p \
+            -largs `pkg-config --static --libs libzmq`
+          zip -j -r ada_kernel-${{ runner.os }}-${GITHUB_REF##*/}.zip \
+            jupyter/.bin/ jupyter/kernels/ada/
+      - name: Save binary as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ada_kernel-${{ runner.os }}
+          path: '*.zip'
+      - name: Upload release
+        run: |
+          if [[ ${GITHUB_REF##*/} = v[0-9]* ]]; then
+              jupyter/.github/workflows/release.sh "${{ secrets.GITHUB_TOKEN }}"
+          fi
