@@ -7,7 +7,7 @@ Files: README.md alire.toml sources/ada/embedded-texts.ads sources/driver/embed.
 Copyright: 2020 Max Reznik <reznikmm@gmail.com>
 License: MIT
 
-Files: tests/*
+Files: tests/* vscode/*
 Copyright: 2020 Max Reznik <reznikmm@gmail.com>
 License: MIT
 
