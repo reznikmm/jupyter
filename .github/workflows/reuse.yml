@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2020-2024 Max Reznik <reznikmm@gmail.com>
+#
+# SPDX-License-Identifier: MIT
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - topic/*
+name: REUSE
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: REUSE check
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: jupyter
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v1.1
+        with:
+          args: --root jupyter lint
