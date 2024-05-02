@@ -68,12 +68,13 @@ package body Processes is
 
       procedure Standard_Output_Available (Self : in out Listener) is
          use type Ada.Streams.Stream_Element_Count;
+         Ok   : Boolean := True;
          Data : Ada.Streams.Stream_Element_Array (1 .. 512);
          Last : Ada.Streams.Stream_Element_Count;
       begin
          loop
-            Process.Read_Standard_Output (Data, Last);
-            exit when Last < Data'First;
+            Process.Read_Standard_Output (Data, Last, Ok);
+            exit when not Ok or Last < Data'First;
             Self.Output.Append (Data (1 .. Last));
          end loop;
       end Standard_Output_Available;
@@ -84,12 +85,13 @@ package body Processes is
 
       procedure Standard_Error_Available (Self : in out Listener) is
          use type Ada.Streams.Stream_Element_Count;
+         Ok   : Boolean := True;
          Data : Ada.Streams.Stream_Element_Array (1 .. 512);
          Last : Ada.Streams.Stream_Element_Count;
       begin
          loop
-            Process.Read_Standard_Error (Data, Last);
-            exit when Last < Data'First;
+            Process.Read_Standard_Error (Data, Last, Ok);
+            exit when not Ok or Last < Data'First;
             Self.Errors.Append (Data (1 .. Last));
          end loop;
       end Standard_Error_Available;
@@ -115,7 +117,6 @@ package body Processes is
       procedure Error_Occurred
         (Self          : in out Listener;
          Process_Error : Integer) is
-         pragma Unreferenced (Self);
       begin
          Errors.Append (+"Error_Occurred");
          Self.Status := Process_Error;

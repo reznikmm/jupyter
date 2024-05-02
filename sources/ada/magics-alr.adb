@@ -150,12 +150,13 @@ is
       procedure Standard_Error_Available (Self : in out Listener) is
          use type Ada.Streams.Stream_Element;
          use type Ada.Streams.Stream_Element_Count;
+         Ok   : Boolean := True;
          Data : Ada.Streams.Stream_Element_Array (1 .. 512);
          Last : Ada.Streams.Stream_Element_Count;
          Tail : Ada.Streams.Stream_Element_Count := 0;
       begin
          loop
-            Self.Process.Read_Standard_Error (Data, Last);
+            Self.Process.Read_Standard_Error (Data, Last, Ok);
             exit when Last < Data'First;
 
             for J in reverse 1 .. Last loop
@@ -193,11 +194,12 @@ is
       procedure Standard_Output_Available (Self : in out Listener) is
          use type Ada.Streams.Stream_Element;
          use type Ada.Streams.Stream_Element_Count;
+         Ok   : Boolean := True;
          Data : Ada.Streams.Stream_Element_Array (1 .. 512);
          Last : Ada.Streams.Stream_Element_Count;
       begin
          loop
-            Self.Process.Read_Standard_Output (Data, Last);
+            Self.Process.Read_Standard_Output (Data, Last, Ok);
 
             for J in 1 .. Last loop
                if Data (J) = 16#0A# then
@@ -321,12 +323,13 @@ is
       procedure Standard_Output_Available (Self : in out Listener) is
          use type Ada.Streams.Stream_Element;
          use type Ada.Streams.Stream_Element_Count;
+         Ok   : Boolean := True;
          Data : Ada.Streams.Stream_Element_Array (1 .. 512);
          Last : Ada.Streams.Stream_Element_Count;
          Tail : Ada.Streams.Stream_Element_Count := 0;
       begin
          loop
-            Self.Process.Read_Standard_Output (Data, Last);
+            Self.Process.Read_Standard_Output (Data, Last, Ok);
             exit when Last < Data'First;
 
             for J in reverse 1 .. Last loop

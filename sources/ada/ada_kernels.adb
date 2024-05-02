@@ -1029,6 +1029,7 @@ package body Ada_Kernels is
 
       if Status = 0 then
          declare
+            Ok     : Boolean := True;
             Load   : League.Strings.Universal_String;
             Ignore : Ada.Streams.Stream_Element_Offset;
             Codec  : constant League.Text_Codecs.Text_Codec :=
@@ -1040,7 +1041,7 @@ package body Ada_Kernels is
             Ada.Wide_Wide_Text_IO.Flush (Self.Trace);
             Load.Append (Line_Feed);
             Self.Process.Write_Standard_Input
-              (Codec.Encode (Load).To_Stream_Element_Array, Ignore);
+              (Codec.Encode (Load).To_Stream_Element_Array, Ignore, Ok);
             Self.Ready := False;
 
             while not Self.Ready loop
@@ -1182,13 +1183,14 @@ package body Ada_Kernels is
    begin
       loop
          declare
+            Ok   : Boolean := True;
             Data : Ada.Streams.Stream_Element_Array (1 .. 512);
             Last : Ada.Streams.Stream_Element_Count;
             From : Ada.Streams.Stream_Element_Count := 1;
          begin
-            Self.Process.Read_Standard_Error (Data, Last);
+            Self.Process.Read_Standard_Error (Data, Last, Ok);
 
-            exit when Last < Data'First;
+            exit when not Ok or Last < Data'First;
 
             for J in 1 .. Last loop
                if Data (J) = 0 then
@@ -1225,12 +1227,13 @@ package body Ada_Kernels is
    begin
       loop
          declare
+            Ok   : Boolean := True;
             Data : Ada.Streams.Stream_Element_Array (1 .. 512);
             Last : Ada.Streams.Stream_Element_Count;
          begin
-            Self.Process.Read_Standard_Output (Data, Last);
+            Self.Process.Read_Standard_Output (Data, Last, Ok);
 
-            exit when Last < Data'First;
+            exit when not Ok or Last < Data'First;
 
             Self.Stdout.Append (Data (1 .. Last));
          end;

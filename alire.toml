@@ -8,7 +8,7 @@ To run this kernel with Jupyter Notebook:
 '''
 
 name = "jupyter_kernel"
-version = "1.1.0"
+version = "1.0.1"
 website = "https://github.com/reznikmm/jupyter/"
 authors = ["Max Reznik"]
 licenses = "BSD-3-Clause"
@@ -29,8 +29,8 @@ macos   = true
 '...'   = false
 
 [[depends-on]]
-matreshka_league = "any"
-spawn = "any"
+matreshka_league = "^21.0.0"
+spawn = "^24.0.0"
 zeromq_ada = "any"
 
 [build-switches]
