@@ -15,10 +15,21 @@ project Jupyter_Ada_Kernel is
 
    package Compiler renames Jupyter.Compiler;
 
+   Static_Flag := ();
+
+   case Spawn.OS_API is
+      when "unix" =>
+         Static_Flag := ("-static");
+      when "osx" =>
+            null;  --  Mac OS can't build static exe
+      when "Windows_NT" =>
+            null;  --  not supported yet
+   end case;
+
    package Binder is
       case Jupyter.Library_Type is
          when "static" | "static-pic" =>
-            for Switches ("ada") use ("-static", "-E", "-W8");
+            for Switches ("ada") use Static_Flag & ("-E", "-W8");
          when "relocatable" =>
             for Switches ("ada") use ("-E", "-W8");
       end case;
@@ -27,7 +38,7 @@ project Jupyter_Ada_Kernel is
    package Linker is
       case Jupyter.Library_Type is
          when "static" | "static-pic" =>
-            for Switches ("ada") use ("-static");
+            for Switches ("ada") use Static_Flag;
          when "relocatable" =>
             null;
       end case;

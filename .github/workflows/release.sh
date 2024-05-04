@@ -37,8 +37,6 @@ upload_url=$( curl \
 
 echo "upload_url=$upload_url"
 
-cd ..
-
 for FILE in *.zip ; do
   # Upload $FILE as an asset to the release
   curl \
