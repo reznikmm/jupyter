@@ -26,8 +26,6 @@ jobs:
     name: On
     steps:
       - uses: actions/checkout@v2
-        with:
-          path: jupyter
       - name: Get alire
         if: runner.arch != 'ARM64'
         uses: alire-project/setup-alire@v3
@@ -51,6 +49,4 @@ jobs:
       - name: Alire build
         run: |
           eval ${{ matrix.xxx.env }}
-          echo $PATH
-          alr index --before=community --add git+https://github.com/reznikmm/alire-index.git#topic/zeromq --name myindex
-          LIBRARY_TYPE=relocatable alr -C jupyter build
+          LIBRARY_TYPE=relocatable alr build
