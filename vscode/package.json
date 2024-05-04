@@ -2,7 +2,7 @@
   "name": "jupyter-ada-kernel",
   "displayName": "Jupyter Ada Kernel",
   "description": "A Jupyter kernel for Ada",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "MaximReznik",
   "icon": "Ada.png",
   "engines": {

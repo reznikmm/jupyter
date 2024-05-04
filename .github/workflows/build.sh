@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+set -x -e
+
 TARGET=`node -e "console.log(process.platform + '-'+ process.arch)"`
 echo TARGET=$TARGET
 export PKG_CONFIG_PATH=$PWD/prefix/lib/pkgconfig/
