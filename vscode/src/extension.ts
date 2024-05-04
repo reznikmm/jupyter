@@ -17,8 +17,10 @@ export function activate(context: vscode.ExtensionContext) {
 		const outputdir = context.extensionPath;
 		const leaveZipped = false;
 		const disableLogging = false;
+		const filter = (asset: { name: string }): boolean =>
+			 asset.name.includes(process.platform + '-'+ process.arch);
 
-		fgr.downloadRelease(user, repo, outputdir, undefined, undefined, leaveZipped, disableLogging)
+		fgr.downloadRelease(user, repo, outputdir, undefined, filter, leaveZipped, disableLogging)
 			.then(async () => {
 				fs.readFile(path.join(outputdir, path.basename(jsonPath)), 'utf8', async (err, data) => {
 					if (!err) {
