@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Max Reznik <reznikmm@gmail.com>
+# SPDX-FileCopyrightText: 2022-2024 Max Reznik <reznikmm@gmail.com>
 #
 # SPDX-License-Identifier: MIT
 
@@ -11,46 +11,58 @@ on:
 name: Build
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        xxx:
+          - os: ubuntu-20.04
+            env: OS=unix
+          - os: macos-12
+            env: OS=osx
+          - os: macos-14
+            env: OS=osx
+
+    runs-on: ${{ matrix.xxx.os }}
+
     name: Build and deploy static binaries
     steps:
       - uses: actions/checkout@v3
-        with:
-          path: jupyter
       - uses: actions/checkout@v3
         with:
           repository: zeromq/libzmq
           path: libzmq
-      - uses: actions/checkout@v3
+      - name: Get alire
+        if: runner.arch != 'ARM64'
+        uses: alire-project/setup-alire@v3
         with:
-          repository: persan/zeromq-Ada
-          path: zeromq-Ada
-      - uses: actions/checkout@v3
-        with:
-          repository: AdaCore/spawn
-          path: spawn
-      - uses: actions/checkout@v3
-        with:
-          repository: godunko/matreshka
-          path: matreshka
-      - name: Build static binary
+          toolchain: gnat_native gprbuild
+
+      - name: Install autotools (MacOS)
+        if: runner.os == 'macOS'
+        run: brew install libtool autoconf automake
+
+      - name: Get alire (ARM64)
+        if: runner.arch == 'ARM64'
         run: |
-          set -x -e
-          sudo apt install -y gcc g++ gnat-11 gprbuild make libtool pkg-config
-          export PKG_CONFIG_PATH=$PWD/prefix/lib/pkgconfig/
-          sed -i -e '/libzmq.gpr/s/^/--  /' zeromq-Ada/zmq.gpr
-          cd libzmq
-          ./autogen.sh
-          ./configure --enable-static --disable-shared --prefix=$PWD/../prefix
-          make all install
-          cd ..
-          make -C matreshka reconfig
-          sed -i -e '/Library_Kind/s/dynamic/static/' matreshka/gnat/*.gpr
-          gprbuild -XLIBRARY_TYPE=static -aP zeromq-Ada/ -aP spawn/gnat/ \
-            -aP matreshka/gnat/ -P jupyter/gnat/jupyter_ada_kernel.gpr -p \
-            -largs `pkg-config --static --libs libzmq`
-          zip -j -r ada_kernel-${{ runner.os }}-${GITHUB_REF##*/}.zip \
-            jupyter/.bin/ jupyter/kernels/ada/
+          curl -L -O https://github.com/simonjwright/alire-index.mac/releases/download/alr-2.0.1-bin-aarch64-macos/alr-2.0.1-bin-aarch64-macos.zip
+          unzip alr-2.0.1-bin-aarch64-macos.zip
+          rm -f alr-2.0.1-bin-aarch64-macos.zip
+          export PATH=$PWD/bin:$PATH
+          alr index --reset-community
+          alr index \
+             --add=git+https://github.com/simonjwright/alire-index.mac.git \
+             --before=community \
+             --name=index_for_mac
+          alr toolchain --select gprbuild gnat_native
+          echo $PWD/bin >> $GITHUB_PATH
+
+      - name: Alire build
+        run: |
+          eval ${{ matrix.xxx.env }}
+          alr settings --set dependencies.shared False
+          alr settings --set distribution.disable_detection True
+          alr exec .github/workflows/build.sh
+
       - name: Save binary as artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -59,6 +71,5 @@ jobs:
       - name: Upload release
         run: |
           if [[ ${GITHUB_REF##*/} = v[0-9]* ]]; then
-              cd jupyter
               .github/workflows/release.sh "${{ secrets.GITHUB_TOKEN }}"
           fi
